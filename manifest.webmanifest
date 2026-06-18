@@ -1,0 +1,15 @@
+{
+  "name": "Het Snackorakel",
+  "short_name": "Snackorakel",
+  "description": "Random snack-generator met casino-vibe voor Snackbar Karst, Dedemsvaart.",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#D62828",
+  "theme_color": "#D62828",
+  "lang": "nl",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

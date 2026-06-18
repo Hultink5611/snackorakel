@@ -1,0 +1,6 @@
+# Bron-data & dev-artefacten — horen niet in de publieke repo
+karst-menu-raw.json
+BUILD (1).md
+snackorakel-mockup.html
+.playwright-mcp/
+.DS_Store
