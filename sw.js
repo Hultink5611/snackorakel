@@ -1,5 +1,7 @@
-/* Service worker — Het Snackorakel. Cache-first app shell zodat 't offline werkt. */
-const CACHE = 'snackorakel-v1';
+/* Service worker — Het Snackorakel.
+   Pagina: network-first (updates komen meteen door, offline valt terug op cache).
+   Assets: cache-first met achtergrond-update. */
+const CACHE = 'snackorakel-v2';
 const ASSETS = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg'];
 
 self.addEventListener('install', e => {
@@ -17,6 +19,19 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+
+  const isPage = req.mode === 'navigate' || req.destination === 'document';
+  if (isPage) {
+    e.respondWith(
+      fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put('index.html', copy));
+        return res;
+      }).catch(() => caches.match('index.html').then(r => r || caches.match('./')))
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(req).then(hit => hit || fetch(req).then(res => {
       try {

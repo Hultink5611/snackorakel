@@ -246,7 +246,7 @@
     <div class="barcode"></div>
     <div class="actions">
       <button onclick="rammen()">Nog 'n keer</button>
-      <button onclick="deelBon()">Kopieer bon</button>
+      <button onclick="deelBon()">Kopieer als tekst</button>
     </div>
   </div>
 
@@ -541,8 +541,12 @@
 
     const bon=document.getElementById('bon'); bon.classList.remove('show'); void bon.offsetWidth; bon.classList.add('show');
 
-    // Kopie = alleen de snack-namen, meer niet.
-    laatsteBon=order.snackNamen.join('\n');
+    // Kopie = alle items (snacks + patat + shake) met hun saus, als platte tekst.
+    const kopie=[];
+    order.lines.forEach(l=> kopie.push(l.saus ? `${l.naam} met ${l.saus}` : l.naam));
+    if(order.patat) kopie.push(order.patat.saus ? `${order.patat.naam} met ${order.patat.saus}` : order.patat.naam);
+    if(order.shake) kopie.push(`${order.shake.naam} ${order.shake.smaak}`);
+    laatsteBon=kopie.join('\n');
   }
 
   /* Budget als plafond: behoud de keuzes, maar her-genereer tot 't binnen budget past.
@@ -585,12 +589,19 @@
   }
 
   function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
+  // Kopieert altijd als platte tekst naar het klembord (geen deel-menu).
   async function deelBon(){
     if(!laatsteBon){toast('Eerst rammen!');return;}
     try{
-      if(navigator.share){ await navigator.share({text:laatsteBon}); return; }
-      await navigator.clipboard.writeText(laatsteBon); toast('Bon gekopieerd 📋');
-    }catch(e){ try{await navigator.clipboard.writeText(laatsteBon); toast('Bon gekopieerd 📋');}catch(_){toast('Kopiëren mislukt');} }
+      await navigator.clipboard.writeText(laatsteBon); toast('Gekopieerd als tekst 📋');
+    }catch(e){
+      try{
+        const ta=document.createElement('textarea'); ta.value=laatsteBon;
+        ta.style.position='fixed'; ta.style.top='-1000px'; ta.setAttribute('readonly','');
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        toast('Gekopieerd als tekst 📋');
+      }catch(_){ toast('Kopiëren mislukt'); }
+    }
   }
 </script>
 <script>
