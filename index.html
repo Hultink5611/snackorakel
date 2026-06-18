@@ -106,7 +106,7 @@
   .big:disabled{filter:grayscale(.4) brightness(.9); cursor:default}
 
   /* ---------- Slot machine ---------- */
-  .slot{display:none; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:20px;
+  .slot{display:none; gap:8px; justify-content:center; align-items:flex-start; flex-wrap:wrap; margin-top:20px;
     background:var(--bruin); border:5px solid var(--geel); border-radius:16px; padding:16px 12px;
     box-shadow:0 6px 0 rgba(0,0,0,.3), inset 0 0 0 3px var(--rood-diep)}
   .slot.show{display:flex}
@@ -124,7 +124,8 @@
   .reel.locked{animation:thunk .18s ease-out}
   @keyframes thunk{0%{transform:translateY(-5px)}60%{transform:translateY(3px)}100%{transform:translateY(0)}}
   .reel-label{margin-top:6px; font-size:9.5px; font-weight:800; color:var(--creme); text-transform:uppercase;
-    text-align:center; line-height:1.1; min-height:22px; letter-spacing:.2px; opacity:0}
+    text-align:center; line-height:1.15; min-height:24px; letter-spacing:.2px; opacity:0;
+    width:100%; padding:0 1px; word-break:break-word; overflow-wrap:anywhere}
   .reel.locked .reel-label{opacity:1}
 
   .bon{background:var(--wit); margin-top:22px; padding:18px 20px 26px; position:relative; font-family:'Inter',sans-serif;
@@ -150,10 +151,11 @@
   .barcode{height:34px; margin-top:14px; background:repeating-linear-gradient(90deg,var(--bruin) 0 2px,transparent 2px 4px,var(--bruin) 4px 7px,transparent 7px 11px)}
   .actions{display:flex; gap:10px; margin-top:14px}
   .actions button{
-    flex:1; font-family:'Anton',sans-serif; text-transform:uppercase; font-size:14px; letter-spacing:.5px;
+    flex:1; font-family:'Anton',sans-serif; text-transform:uppercase; font-size:13px; letter-spacing:.3px;
     cursor:pointer; border:3px solid var(--bruin); border-radius:10px; background:var(--creme); color:var(--bruin);
-    padding:9px 6px; box-shadow:0 3px 0 var(--bruin); transition:transform .06s;
+    padding:9px 6px; box-shadow:0 3px 0 var(--bruin); transition:transform .06s; line-height:1.1;
   }
+  .actions + .actions{margin-top:10px}
   .actions button:active{transform:translateY(3px); box-shadow:0 0 0 var(--bruin)}
   .placeholder{margin-top:22px; text-align:center; color:var(--creme); font-family:'Bree Serif',serif; font-size:14px; opacity:.85}
   .tag{font-size:10px; background:var(--groen); color:#fff; padding:1px 6px; border-radius:6px; margin-left:6px; vertical-align:1px; font-weight:600}
@@ -254,7 +256,10 @@
     <div class="barcode"></div>
     <div class="actions">
       <button onclick="rammen()">Nog 'n keer</button>
-      <button onclick="deelBon()">Kopieer als tekst</button>
+    </div>
+    <div class="actions">
+      <button onclick="deelBon('vol')">📋 Kopieer bon</button>
+      <button onclick="deelBon('tekst')">📝 Kopieer als tekst</button>
     </div>
   </div>
 
@@ -289,7 +294,7 @@
     {n:"Kipfingers (6)",p:2.95,vega:false},{n:"Frikandel speciaal ketchup",p:2.95,vega:false},
     {n:"Frikandel mayo & ketchup",p:2.95,vega:false},{n:"Frikandel mayo & curry",p:2.95,vega:false},
     {n:"Frikandel spec. oliehoorn curry",p:2.95,vega:false},{n:"Frikandel speciaal",p:2.95,vega:false},
-    {n:"Mini loempia's (6)",p:2.95,vega:true},{n:"Eierbal",p:3.00,vega:false},
+    {n:"Mini loempia's (6)",p:2.95,vega:true},
     {n:"Gehaktbal",p:3.00,vega:false},{n:"Berenhap",p:3.10,vega:false},
     {n:"Vlammetjes (6)",p:3.50,vega:false},{n:"Kipstrips (3)",p:3.65,vega:false},
     {n:"Kip nuggets (6)",p:3.80,vega:false},{n:"Loempia",p:3.95,vega:false},
@@ -335,7 +340,7 @@
 
   /* =========================== STATE & UI ================================== */
   let mode="wonder", nSnacks=1, patatSize="klein", patatPrijs=2.35, shakeSize="klein", shakePrijs=3.00;
-  let laatsteBon="", spinning=false, muted=false;
+  let spinning=false, muted=false, bonTekst="", bonVol="";
   let budgetOn=false, budget=10;
 
   const bulbs=document.getElementById('bulbs');
@@ -549,12 +554,17 @@
 
     const bon=document.getElementById('bon'); bon.classList.remove('show'); void bon.offsetWidth; bon.classList.add('show');
 
-    // Kopie = alle items (snacks + patat + shake) met hun saus, als platte tekst.
+    // Twee kopie-varianten:
+    //  - bonTekst = alle items met saus, platte tekst (handig om te bestellen)
+    //  - bonVol   = de volledige bon met prijzen, totaal en verhaaltje
     const kopie=[];
     order.lines.forEach(l=> kopie.push(l.saus ? `${l.naam} met ${l.saus}` : l.naam));
     if(order.patat) kopie.push(order.patat.saus ? `${order.patat.naam} met ${order.patat.saus}` : order.patat.naam);
     if(order.shake) kopie.push(`${order.shake.naam} ${order.shake.smaak}`);
-    laatsteBon=kopie.join('\n');
+    bonTekst=kopie.join('\n');
+    bonVol=`🍟 HET SNACKORAKEL — Snackbar Karst, Dedemsvaart\n(${mode==='wonder'?'Wonder ✨':'Gek 🤪'})\n`+
+      `--------------------------------\n`+regels.join('\n')+`\n`+
+      `--------------------------------\nTotaal  ${eur(order.tot)}\n\n“${order.story}”`;
   }
 
   /* Budget als plafond: behoud de keuzes, maar her-genereer tot 't binnen budget past.
@@ -597,17 +607,20 @@
   }
 
   function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
-  // Kopieert altijd als platte tekst naar het klembord (geen deel-menu).
-  async function deelBon(){
-    if(!laatsteBon){toast('Eerst rammen!');return;}
+  // Kopieert naar het klembord als platte tekst (geen deel-menu).
+  // kind='vol' = volledige bon, kind='tekst' = alleen de items.
+  async function deelBon(kind){
+    const txt = kind==='vol' ? bonVol : bonTekst;
+    if(!txt){toast('Eerst rammen!');return;}
+    const melding = kind==='vol' ? 'Bon gekopieerd 📋' : 'Gekopieerd als tekst 📋';
     try{
-      await navigator.clipboard.writeText(laatsteBon); toast('Gekopieerd als tekst 📋');
+      await navigator.clipboard.writeText(txt); toast(melding);
     }catch(e){
       try{
-        const ta=document.createElement('textarea'); ta.value=laatsteBon;
+        const ta=document.createElement('textarea'); ta.value=txt;
         ta.style.position='fixed'; ta.style.top='-1000px'; ta.setAttribute('readonly','');
         document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-        toast('Gekopieerd als tekst 📋');
+        toast(melding);
       }catch(_){ toast('Kopiëren mislukt'); }
     }
   }
