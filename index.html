@@ -89,6 +89,9 @@
   .budgetnum input{width:48px; font-family:'Anton',sans-serif; font-size:18px; color:var(--bruin); background:var(--wit);
     border:3px solid var(--bruin); border-radius:8px; text-align:center; padding:3px 0; -moz-appearance:textfield}
   .budgetnum input:focus{outline:none; border-color:var(--rood)}
+  .budgetwarn{display:none; margin-top:10px; padding:8px 10px; font-size:12px; font-weight:800; line-height:1.35;
+    color:var(--rood-diep); background:#ffe3da; border:2px solid var(--rood); border-radius:9px; text-align:center}
+  .budgetwarn.show{display:block}
   .budgetnum input::-webkit-outer-spin-button,.budgetnum input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
 
   .bigwrap{position:relative; margin:22px 0 6px; text-align:center}
@@ -196,7 +199,7 @@
 
     <div class="row">
       <span class="lbl">Vega snacks</span>
-      <div class="toggle on" id="t-vega" onclick="this.classList.toggle('on')"><div class="knob"></div></div>
+      <div class="toggle on" id="t-vega" onclick="toggleVega(this)"><div class="knob"></div></div>
     </div>
 
     <div class="row">
@@ -235,6 +238,7 @@
         <div class="budgetnum"><span>€</span><input type="number" id="num-budget" min="1" max="99" step="1" value="10" inputmode="numeric" oninput="onNum(this.value)" onblur="fixNum()"></div>
       </div>
     </div>
+    <div class="budgetwarn" id="budgetWarn"></div>
   </div>
 
   <div class="bigwrap">
@@ -352,25 +356,49 @@
     document.querySelectorAll('#'+container+' button').forEach(b=>b.onclick=()=>{
       if(spinning)return;
       document.querySelectorAll('#'+container+' button').forEach(x=>x.classList.remove('on'));
-      b.classList.add('on'); cb(b);
+      b.classList.add('on'); cb(b); updateBudgetWarning();
     });
   }
   segPick('seg-snacks', b=>nSnacks=+b.dataset.v);
   segPick('seg-patat', b=>{patatSize=b.dataset.v; patatPrijs=+b.dataset.p;});
   segPick('seg-shake', b=>{shakeSize=b.dataset.v; shakePrijs=+b.dataset.p;});
 
-  function togglePatat(){if(spinning)return;const t=document.getElementById('t-patat');t.classList.toggle('on');document.getElementById('sub-patat').classList.toggle('show',t.classList.contains('on'));}
-  function toggleShake(){if(spinning)return;const t=document.getElementById('t-shake');t.classList.toggle('on');document.getElementById('sub-shake').classList.toggle('show',t.classList.contains('on'));}
-  function toggleBudget(){if(spinning)return;const t=document.getElementById('t-budget');t.classList.toggle('on');budgetOn=t.classList.contains('on');document.getElementById('sub-budget').classList.toggle('show',budgetOn);}
+  function togglePatat(){if(spinning)return;const t=document.getElementById('t-patat');t.classList.toggle('on');document.getElementById('sub-patat').classList.toggle('show',t.classList.contains('on'));updateBudgetWarning();}
+  function toggleShake(){if(spinning)return;const t=document.getElementById('t-shake');t.classList.toggle('on');document.getElementById('sub-shake').classList.toggle('show',t.classList.contains('on'));updateBudgetWarning();}
+  function toggleVega(t){if(spinning)return;t.classList.toggle('on');updateBudgetWarning();}
+  function toggleBudget(){if(spinning)return;const t=document.getElementById('t-budget');t.classList.toggle('on');budgetOn=t.classList.contains('on');document.getElementById('sub-budget').classList.toggle('show',budgetOn);updateBudgetWarning();}
   function setBudget(v){
     budget=Math.min(99, Math.max(1, Math.round(+v||1)));
     const rng=document.getElementById('rng-budget'), num=document.getElementById('num-budget');
     rng.value=Math.min(Math.max(budget,+rng.min),+rng.max); // slider klemt op 3–30
     if(num.value!==String(budget)) num.value=budget;
+    updateBudgetWarning();
   }
   function onSlider(v){ setBudget(v); }
-  function onNum(v){ if(v==='') return; budget=Math.min(99,Math.max(1,Math.round(+v||1))); const rng=document.getElementById('rng-budget'); rng.value=Math.min(Math.max(budget,+rng.min),+rng.max); }
+  function onNum(v){ if(v==='') return; budget=Math.min(99,Math.max(1,Math.round(+v||1))); const rng=document.getElementById('rng-budget'); rng.value=Math.min(Math.max(budget,+rng.min),+rng.max); updateBudgetWarning(); }
   function fixNum(){ setBudget(budget); } // leeg/ongeldig veld herstellen bij verlaten
+
+  // Goedkoopst mogelijke totaal voor de huidige keuzes — om vooraf te waarschuwen.
+  function minTotaal(){
+    const vegaOk=document.getElementById('t-vega').classList.contains('on');
+    const kosten=(vegaOk?SNACKS:SNACKS.filter(s=>!s.vega))
+      .map(s=>s.p+(geenLosseSaus(s.n)?0:SAUS_PRIJS)).sort((a,b)=>a-b);
+    let sum=0; for(let i=0;i<nSnacks && i<kosten.length;i++) sum+=kosten[i];
+    if(document.getElementById('t-patat').classList.contains('on')) sum+=patatPrijs+SAUS_PRIJS;
+    if(document.getElementById('t-shake').classList.contains('on')) sum+=shakePrijs;
+    return sum;
+  }
+  function updateBudgetWarning(){
+    const w=document.getElementById('budgetWarn'); if(!w) return;
+    if(!budgetOn){ w.classList.remove('show'); return; }
+    const min=minTotaal();
+    if(min>budget+0.001){
+      w.textContent=`⚠️ Met deze keuzes haal je ${eur(budget)} niet — je hebt minstens ${eur(min)} nodig.`;
+      w.classList.add('show');
+    } else {
+      w.classList.remove('show');
+    }
+  }
 
   /* =========================== GELUID (WebAudio) =========================== */
   let audioCtx=null;
