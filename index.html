@@ -48,6 +48,12 @@
   .mute{position:absolute; top:10px; right:10px; width:34px; height:34px; border-radius:50%; border:2px solid var(--geel);
     background:rgba(0,0,0,.25); color:var(--geel); font-size:16px; cursor:pointer; line-height:1; display:flex; align-items:center; justify-content:center}
 
+  .install-btn{display:none; width:100%; margin-top:12px; font-family:'Anton',sans-serif; text-transform:uppercase;
+    letter-spacing:.5px; font-size:16px; cursor:pointer; color:var(--bruin); background:var(--geel);
+    border:4px solid var(--geel-warm); border-radius:12px; padding:12px; box-shadow:0 4px 0 var(--geel-warm); transition:transform .06s}
+  .install-btn.show{display:block; animation:pulseIn .4s ease-out}
+  .install-btn:active{transform:translateY(2px); box-shadow:0 2px 0 var(--geel-warm)}
+  @keyframes pulseIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
   .modes{display:flex; gap:10px; margin:18px 0 14px}
   .mode{
     flex:1; cursor:pointer; border:4px solid var(--bruin); border-radius:12px;
@@ -166,6 +172,8 @@
     <h1>Het<br>Snackorakel</h1>
     <div class="sub">Karst · Dedemsvaart</div>
   </div>
+
+  <button class="install-btn" id="installBtn" onclick="doInstall()">📲 Installeer als app</button>
 
   <div class="modes">
     <div class="mode on" data-mode="wonder" onclick="setMode(this)">
@@ -608,6 +616,33 @@
   /* PWA: registreer de service worker zodat de app installeerbaar is en offline werkt. */
   if('serviceWorker' in navigator){
     window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
+
+  /* Installeerknop: vang de install-prompt op en toon 'm in de app zelf. */
+  let deferredPrompt=null;
+  const installBtn=document.getElementById('installBtn');
+  const isStandalone=window.matchMedia('(display-mode: standalone)').matches || navigator.standalone===true;
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  window.addEventListener('beforeinstallprompt', e=>{
+    e.preventDefault(); deferredPrompt=e;
+    if(!isStandalone) installBtn.classList.add('show');
+  });
+  window.addEventListener('appinstalled', ()=>{ deferredPrompt=null; installBtn.classList.remove('show'); });
+
+  // iOS vuurt geen prompt af → toon de knop met een uitleg-hint.
+  if(isIOS && !isStandalone) installBtn.classList.add('show');
+
+  async function doInstall(){
+    if(deferredPrompt){
+      deferredPrompt.prompt();
+      const {outcome}=await deferredPrompt.userChoice;
+      deferredPrompt=null;
+      if(outcome==='accepted') installBtn.classList.remove('show');
+      return;
+    }
+    if(isIOS){ toast('Tik op  ⬆️  (Deel) → "Zet op beginscherm"'); return; }
+    toast('Open het browsermenu (⋮) → "App installeren"');
   }
 </script>
 </body>
