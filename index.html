@@ -205,13 +205,6 @@
     </div>
 
     <div class="row">
-      <span class="lbl">Kipsnacks</span>
-      <div class="seg" id="seg-kip">
-        <button class="on" data-v="mag">Mag</button><button data-v="altijd">Altijd</button><button data-v="geen">Geen</button>
-      </div>
-    </div>
-
-    <div class="row">
       <span class="lbl">Patat erbij</span>
       <div class="toggle" id="t-patat" onclick="togglePatat()"><div class="knob"></div></div>
     </div>
@@ -248,6 +241,17 @@
       </div>
     </div>
     <div class="budgetwarn" id="budgetWarn"></div>
+
+    <div class="row last" id="row-meer" onclick="toggleMeer()" style="cursor:pointer; border-top:2px dashed #d9c3a3; margin-top:4px">
+      <span class="lbl">⚙️ Meer opties</span>
+      <span id="meer-caret" style="font-family:'Anton',sans-serif; font-size:15px">▾</span>
+    </div>
+    <div class="subrow" id="sub-meer" style="border-bottom:none">
+      <span class="sl">Kipsnacks</span>
+      <div class="seg" id="seg-kip">
+        <button class="on" data-v="mag">Mag</button><button data-v="altijd">Altijd</button><button data-v="geen">Geen</button>
+      </div>
+    </div>
   </div>
 
   <div class="bigwrap">
@@ -392,6 +396,7 @@
   segPick('seg-patat', b=>{patatSize=b.dataset.v; patatPrijs=+b.dataset.p;});
   segPick('seg-shake', b=>{shakeSize=b.dataset.v; shakePrijs=+b.dataset.p;});
 
+  function toggleMeer(){if(spinning)return;const open=document.getElementById('sub-meer').classList.toggle('show');document.getElementById('meer-caret').textContent=open?'▴':'▾';}
   function togglePatat(){if(spinning)return;const t=document.getElementById('t-patat');t.classList.toggle('on');document.getElementById('sub-patat').classList.toggle('show',t.classList.contains('on'));updateBudgetWarning();}
   function toggleShake(){if(spinning)return;const t=document.getElementById('t-shake');t.classList.toggle('on');document.getElementById('sub-shake').classList.toggle('show',t.classList.contains('on'));updateBudgetWarning();}
   function toggleBudget(){if(spinning)return;const t=document.getElementById('t-budget');t.classList.toggle('on');budgetOn=t.classList.contains('on');document.getElementById('sub-budget').classList.toggle('show',budgetOn);updateBudgetWarning();}
