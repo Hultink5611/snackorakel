@@ -205,6 +205,13 @@
     </div>
 
     <div class="row">
+      <span class="lbl">Kipsnacks</span>
+      <div class="seg" id="seg-kip">
+        <button class="on" data-v="mag">Mag</button><button data-v="altijd">Altijd</button><button data-v="geen">Geen</button>
+      </div>
+    </div>
+
+    <div class="row">
       <span class="lbl">Patat erbij</span>
       <div class="toggle" id="t-patat" onclick="togglePatat()"><div class="knob"></div></div>
     </div>
@@ -349,12 +356,22 @@
   let spinning=false, muted=false, bonTekst="", bonVol="";
   let budgetOn=false, budget=10;
   let vegaMode="alles"; // alles = vlees + vega, geen = geen vega, alleen = alleen vega
+  let kipMode="mag";    // mag = willekeurig, altijd = gegarandeerd ≥1 kip, geen = geen kip
+
+  const isKip = naam => /kip|nugget|wing|corn/i.test(naam);
 
   // Snack-pool op basis van de vega-keuze.
   function vegaPool(){
     if(vegaMode==='alleen') return SNACKS.filter(s=>s.vega);
     if(vegaMode==='geen')   return SNACKS.filter(s=>!s.vega);
     return SNACKS;
+  }
+
+  // Pool na vega- én kip(geen)-filter — basis voor spin en budgetcheck.
+  function snackPool(){
+    let p = vegaPool();
+    if(kipMode==='geen') p = p.filter(s=>!isKip(s.n));
+    return p;
   }
 
   const bulbs=document.getElementById('bulbs');
@@ -370,6 +387,7 @@
     });
   }
   segPick('seg-vega', b=>vegaMode=b.dataset.v);
+  segPick('seg-kip', b=>kipMode=b.dataset.v);
   segPick('seg-snacks', b=>nSnacks=+b.dataset.v);
   segPick('seg-patat', b=>{patatSize=b.dataset.v; patatPrijs=+b.dataset.p;});
   segPick('seg-shake', b=>{shakeSize=b.dataset.v; shakePrijs=+b.dataset.p;});
@@ -390,9 +408,19 @@
 
   // Goedkoopst mogelijke totaal voor de huidige keuzes — om vooraf te waarschuwen.
   function minTotaal(){
-    const kosten=vegaPool()
-      .map(s=>s.p+(geenLosseSaus(s.n)?0:SAUS_PRIJS)).sort((a,b)=>a-b);
-    let sum=0; for(let i=0;i<nSnacks && i<kosten.length;i++) sum+=kosten[i];
+    const cost = s => s.p+(geenLosseSaus(s.n)?0:SAUS_PRIJS);
+    const pool = snackPool();
+    const kosten = pool.map(cost).sort((a,b)=>a-b);
+    const kipPool = pool.filter(s=>isKip(s.n));
+    let sum=0;
+    if(kipMode==='altijd' && kipPool.length){     // goedkoopste kip + rest goedkoopst
+      const kipMin = Math.min(...kipPool.map(cost));
+      sum += kipMin;
+      const rest=[...kosten]; rest.splice(rest.indexOf(kipMin),1);
+      for(let i=0;i<nSnacks-1 && i<rest.length;i++) sum+=rest[i];
+    } else {
+      for(let i=0;i<nSnacks && i<kosten.length;i++) sum+=kosten[i];
+    }
     if(document.getElementById('t-patat').classList.contains('on')) sum+=patatPrijs+SAUS_PRIJS;
     if(document.getElementById('t-shake').classList.contains('on')) sum+=shakePrijs;
     return sum;
@@ -497,8 +525,20 @@
 
   // Bouwt de uitkomst: snacks + sauzen + patat + shake + verhaal.
   function maakOrder(){
-    const pool = vegaPool();
-    const chosen = pick(pool,nSnacks);
+    const pool = snackPool();
+    let chosen;
+    if(kipMode==='altijd'){
+      const kipPool = pool.filter(s=>isKip(s.n));
+      if(kipPool.length){                       // forceer minstens één kipsnack
+        const kip = one(kipPool);
+        const rest = pick(pool.filter(s=>s!==kip), nSnacks-1);
+        chosen = pick([kip, ...rest], nSnacks);  // shuffle: kip niet altijd vooraan
+      } else {
+        chosen = pick(pool, nSnacks);            // geen kip mogelijk (bv. alleen-vega)
+      }
+    } else {
+      chosen = pick(pool, nSnacks);
+    }
 
     let tot=0; const lines=[]; const reelItems=[]; const snackNamen=[];
     chosen.forEach(s=>{
