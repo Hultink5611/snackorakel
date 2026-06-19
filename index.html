@@ -199,7 +199,9 @@
 
     <div class="row">
       <span class="lbl">Vega snacks</span>
-      <div class="toggle on" id="t-vega" onclick="toggleVega(this)"><div class="knob"></div></div>
+      <div class="seg" id="seg-vega">
+        <button class="on" data-v="alles">Ja</button><button data-v="geen">Nee</button><button data-v="alleen">Alleen</button>
+      </div>
     </div>
 
     <div class="row">
@@ -346,6 +348,14 @@
   let mode="wonder", nSnacks=1, patatSize="klein", patatPrijs=2.35, shakeSize="klein", shakePrijs=3.00;
   let spinning=false, muted=false, bonTekst="", bonVol="";
   let budgetOn=false, budget=10;
+  let vegaMode="alles"; // alles = vlees + vega, geen = geen vega, alleen = alleen vega
+
+  // Snack-pool op basis van de vega-keuze.
+  function vegaPool(){
+    if(vegaMode==='alleen') return SNACKS.filter(s=>s.vega);
+    if(vegaMode==='geen')   return SNACKS.filter(s=>!s.vega);
+    return SNACKS;
+  }
 
   const bulbs=document.getElementById('bulbs');
   for(let i=0;i<7;i++){const b=document.createElement('div');b.className='bulb';bulbs.appendChild(b);}
@@ -359,13 +369,13 @@
       b.classList.add('on'); cb(b); updateBudgetWarning();
     });
   }
+  segPick('seg-vega', b=>vegaMode=b.dataset.v);
   segPick('seg-snacks', b=>nSnacks=+b.dataset.v);
   segPick('seg-patat', b=>{patatSize=b.dataset.v; patatPrijs=+b.dataset.p;});
   segPick('seg-shake', b=>{shakeSize=b.dataset.v; shakePrijs=+b.dataset.p;});
 
   function togglePatat(){if(spinning)return;const t=document.getElementById('t-patat');t.classList.toggle('on');document.getElementById('sub-patat').classList.toggle('show',t.classList.contains('on'));updateBudgetWarning();}
   function toggleShake(){if(spinning)return;const t=document.getElementById('t-shake');t.classList.toggle('on');document.getElementById('sub-shake').classList.toggle('show',t.classList.contains('on'));updateBudgetWarning();}
-  function toggleVega(t){if(spinning)return;t.classList.toggle('on');updateBudgetWarning();}
   function toggleBudget(){if(spinning)return;const t=document.getElementById('t-budget');t.classList.toggle('on');budgetOn=t.classList.contains('on');document.getElementById('sub-budget').classList.toggle('show',budgetOn);updateBudgetWarning();}
   function setBudget(v){
     budget=Math.min(99, Math.max(1, Math.round(+v||1)));
@@ -380,8 +390,7 @@
 
   // Goedkoopst mogelijke totaal voor de huidige keuzes — om vooraf te waarschuwen.
   function minTotaal(){
-    const vegaOk=document.getElementById('t-vega').classList.contains('on');
-    const kosten=(vegaOk?SNACKS:SNACKS.filter(s=>!s.vega))
+    const kosten=vegaPool()
       .map(s=>s.p+(geenLosseSaus(s.n)?0:SAUS_PRIJS)).sort((a,b)=>a-b);
     let sum=0; for(let i=0;i<nSnacks && i<kosten.length;i++) sum+=kosten[i];
     if(document.getElementById('t-patat').classList.contains('on')) sum+=patatPrijs+SAUS_PRIJS;
@@ -488,8 +497,7 @@
 
   // Bouwt de uitkomst: snacks + sauzen + patat + shake + verhaal.
   function maakOrder(){
-    const vegaOk = document.getElementById('t-vega').classList.contains('on');
-    const pool = vegaOk ? SNACKS : SNACKS.filter(s=>!s.vega);
+    const pool = vegaPool();
     const chosen = pick(pool,nSnacks);
 
     let tot=0; const lines=[]; const reelItems=[]; const snackNamen=[];
