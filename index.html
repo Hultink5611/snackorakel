@@ -162,6 +162,14 @@
   .actions button:active{transform:translateY(3px); box-shadow:0 0 0 var(--bruin)}
   .placeholder{margin-top:22px; text-align:center; color:var(--creme); font-family:'Bree Serif',serif; font-size:14px; opacity:.85}
   .tag{font-size:10px; background:var(--groen); color:#fff; padding:1px 6px; border-radius:6px; margin-left:6px; vertical-align:1px; font-weight:600}
+  .chipwrap{flex-basis:100%; width:100%; padding-top:8px}
+  .chiphead{display:flex; align-items:center; justify-content:space-between; gap:8px}
+  .chiplink{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--rood); cursor:pointer; border-bottom:2px solid var(--rood)}
+  .chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+  .chip{font-size:12px; font-weight:700; padding:6px 10px; border-radius:999px; line-height:1.1; cursor:pointer;
+    border:2.5px solid var(--bruin); background:var(--wit); color:var(--bruin)}
+  .chip.off{background:#e8dac6; border-color:#c2ab8c; color:#a08b72; text-decoration:line-through}
+  .sausnote{font-size:11.5px; color:#8a7560; margin-top:8px; line-height:1.4}
   .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); background:var(--bruin); color:var(--creme);
     padding:10px 18px; border-radius:10px; font-weight:600; font-size:14px; opacity:0; pointer-events:none; transition:.25s; z-index:50}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
@@ -251,6 +259,14 @@
       <div class="seg" id="seg-kip">
         <button class="on" data-v="mag">Mag</button><button data-v="altijd">Altijd</button><button data-v="geen">Geen</button>
       </div>
+      <div class="chipwrap">
+        <div class="chiphead">
+          <span class="sl">Sauzen</span>
+          <span class="chiplink" id="saus-reset" onclick="alleSauzenAan()">alles aan</span>
+        </div>
+        <div class="chips" id="saus-chips"></div>
+        <div class="sausnote" id="saus-note"></div>
+      </div>
     </div>
   </div>
 
@@ -324,12 +340,40 @@
   ];
 
   const SAUS_PRIJS=0.75;
-  // GEK = echte sauzen, raar gecombineerd (mag absurd zijn).
+
+  /* ===== SAUS-REGISTER =====
+     Elke saus kent z'n eigen id én de basissauzen waar 'ie uit bestaat.
+     Zet je 'satésaus zoet' uit, dan valt oorlog zoet automatisch óók af
+     (die zit er in). Zo werkt een pinda- of ui-hekel meteen overal door. */
+  const SAUZEN=[
+    {id:'mayo',        label:'mayonaise',       uit:['mayo']},
+    {id:'ketchup',     label:'ketchup',         uit:['ketchup']},
+    {id:'curry',       label:'currysaus',       uit:['curry']},
+    {id:'joppie',      label:'joppiesaus',      uit:['joppie']},
+    {id:'speciaal',    label:'speciaalsaus',    uit:['speciaal','mayo','curry','ui']},
+    {id:'sate',        label:'satésaus zoet',   uit:['sate']},
+    {id:'sate-scherp', label:'satésaus scherp', uit:['sate-scherp','sate']},
+    {id:'chili',       label:'chilisaus',       uit:['chili']},
+    {id:'zigeuner',    label:'zigeunersaus',    uit:['zigeuner']},
+    {id:'knoflook',    label:'knoflooksaus',    uit:['knoflook']},
+    {id:'jambala',     label:'jambala',         uit:['jambala']},
+    {id:'appelmoes',   label:'appelmoes',       uit:['appelmoes']},
+    {id:'ui',          label:'extra ui',        uit:['ui']},
+    {id:'oorlog-zoet', label:'oorlog zoet',     uit:['oorlog-zoet','mayo','sate','ui']},
+    {id:'oorlog-scherp',label:'oorlog scherp',  uit:['oorlog-scherp','mayo','sate','ui']}
+  ];
+  const SAUS = Object.fromEntries(SAUZEN.map(s=>[s.id,s]));
+  const sausLabel = id => (SAUS[id]||{label:id}).label;
+  // Mag deze saus (of saus-combi) op de bon?
+  const sausMag = id => !(SAUS[id]||{uit:[id]}).uit.some(x=>sausUit.has(x));
+  const comboMag = ids => ids.every(sausMag);
+
+  // GEK = echte sauzen, raar gecombineerd (mag absurd zijn) — als id-combi's.
   const SAUS_GEK=[
-    "oorlog scherp","satésaus scherp + knoflook","zigeunersaus + appelmoes",
-    "chilisaus + joppiesaus","mayo + ui + curry","jambala + satésaus scherp",
-    "knoflook + appelmoes","ketchup + zigeunersaus","oorlog zoet + extra ui",
-    "speciaal + chilisaus"
+    ['oorlog-scherp'], ['sate-scherp','knoflook'], ['zigeuner','appelmoes'],
+    ['chili','joppie'], ['mayo','ui','curry'], ['jambala','sate-scherp'],
+    ['knoflook','appelmoes'], ['ketchup','zigeuner'], ['oorlog-zoet','ui'],
+    ['speciaal','chili']
   ];
   const SHAKE_SMAKEN=["aardbei","banaan","chocola","vanille","kiwi"];
 
@@ -361,6 +405,9 @@
   let budgetOn=false, budget=10;
   let vegaMode="alles"; // alles = vlees + vega, geen = geen vega, alleen = alleen vega
   let kipMode="mag";    // mag = willekeurig, altijd = gegarandeerd ≥1 kip, geen = geen kip
+  const SAUSKEY='snackorakel_sausuit_v1';
+  let sausUit=new Set();   // sauzen die de gebruiker nooit wil zien
+  try{ const raw=localStorage.getItem(SAUSKEY); if(raw) sausUit=new Set(JSON.parse(raw)); }catch(e){}
 
   const isKip = naam => /kip|nugget|wing|corn/i.test(naam);
 
@@ -395,6 +442,43 @@
   segPick('seg-snacks', b=>nSnacks=+b.dataset.v);
   segPick('seg-patat', b=>{patatSize=b.dataset.v; patatPrijs=+b.dataset.p;});
   segPick('seg-shake', b=>{shakeSize=b.dataset.v; shakePrijs=+b.dataset.p;});
+  renderSausChips();
+
+  /* ===== Sauzen aan/uit — wat je wegklikt komt nooit meer op de bon ===== */
+  function bewaarSaus(){ try{ localStorage.setItem(SAUSKEY, JSON.stringify([...sausUit])); }catch(e){} }
+  function toggleSaus(id){
+    if(spinning) return;
+    if(sausUit.has(id)) sausUit.delete(id); else sausUit.add(id);
+    bewaarSaus(); renderSausChips(); updateBudgetWarning();
+  }
+  function alleSauzenAan(){
+    if(spinning) return;
+    sausUit.clear(); bewaarSaus(); renderSausChips(); updateBudgetWarning();
+  }
+  function renderSausChips(){
+    const box=document.getElementById('saus-chips'); if(!box) return;
+    box.innerHTML='';
+    SAUZEN.forEach(s=>{
+      const b=document.createElement('button');
+      b.type='button';
+      b.className='chip'+(sausMag(s.id)?'':' off');
+      b.textContent=s.label;
+      b.title=sausMag(s.id)?`${s.label} mag op de bon — tik om uit te zetten`:`${s.label} staat uit`;
+      b.onclick=()=>toggleSaus(s.id);
+      box.appendChild(b);
+    });
+    const note=document.getElementById('saus-note');
+    const uit=SAUZEN.filter(s=>!sausMag(s.id));
+    const eigenUit=[...sausUit];
+    if(!eigenUit.length){ note.textContent='Alle sauzen doen mee. Tik een saus weg die je nooit wilt.'; }
+    else if(!SAUZEN.some(s=>sausMag(s.id))){ note.textContent='⚠️ Alles staat uit — je krijgt je snacks kaal, zonder saus.'; }
+    else {
+      const gevolg=uit.length-eigenUit.length;
+      note.textContent=`${uit.length} van de ${SAUZEN.length} sauzen uit`+
+        (gevolg>0?` (waarvan ${gevolg} automatisch: die zitten in een saus die je wegklikte)`:'')+'.';
+    }
+    document.getElementById('saus-reset').style.visibility=eigenUit.length?'visible':'hidden';
+  }
 
   function toggleMeer(){if(spinning)return;const open=document.getElementById('sub-meer').classList.toggle('show');document.getElementById('meer-caret').textContent=open?'▴':'▾';}
   function togglePatat(){if(spinning)return;const t=document.getElementById('t-patat');t.classList.toggle('on');document.getElementById('sub-patat').classList.toggle('show',t.classList.contains('on'));updateBudgetWarning();}
@@ -413,20 +497,23 @@
 
   // Goedkoopst mogelijke totaal voor de huidige keuzes — om vooraf te waarschuwen.
   function minTotaal(){
-    const cost = s => s.p+(geenLosseSaus(s.n)?0:SAUS_PRIJS);
+    const cost = s => s.p+(krijgtSaus(s.n)?SAUS_PRIJS:0);
     const pool = snackPool();
-    const kosten = pool.map(cost).sort((a,b)=>a-b);
+    // per familie de goedkoopste — de motor kiest nooit twee uit dezelfde familie
+    const perFam={};
+    pool.forEach(s=>{ const f=prof(s).fam; if(!perFam[f] || cost(s)<cost(perFam[f])) perFam[f]=s; });
+    const kosten=Object.values(perFam).map(cost).sort((a,b)=>a-b);
     const kipPool = pool.filter(s=>isKip(s.n));
     let sum=0;
     if(kipMode==='altijd' && kipPool.length){     // goedkoopste kip + rest goedkoopst
       const kipMin = Math.min(...kipPool.map(cost));
       sum += kipMin;
-      const rest=[...kosten]; rest.splice(rest.indexOf(kipMin),1);
+      const rest=[...kosten]; const idx=rest.indexOf(kipMin); if(idx>=0) rest.splice(idx,1);
       for(let i=0;i<nSnacks-1 && i<rest.length;i++) sum+=rest[i];
     } else {
       for(let i=0;i<nSnacks && i<kosten.length;i++) sum+=kosten[i];
     }
-    if(document.getElementById('t-patat').classList.contains('on')) sum+=patatPrijs+SAUS_PRIJS;
+    if(document.getElementById('t-patat').classList.contains('on')) sum+=patatPrijs+(krijgtSaus(`Patat ${patatSize}`)?SAUS_PRIJS:0);
     if(document.getElementById('t-shake').classList.contains('on')) sum+=shakePrijs;
     return sum;
   }
@@ -470,7 +557,8 @@
   /* ===== Saus-logica =====
      Geen dubbele saus (snacks die 'm al in de naam hebben), geen losse saus op
      saté/salades. Wonder = gecureerd lekker, met ~30% kans op een verrassende
-     'WAUW'-combo. Gek = echte sauzen, absurd gecombineerd. */
+     'WAUW'-combo. Gek = echte sauzen, absurd gecombineerd.
+     Alles loopt langs sausUit: wat de gebruiker heeft weggeklikt komt er nooit in. */
   function geenLosseSaus(naam){
     const n=naam.toLowerCase();
     if(/slaatje|rauwkost/.test(n)) return true;                 // salades
@@ -478,45 +566,248 @@
     if(/mayo|ketchup|speciaal|oorlog|joppie|oliehoorn|puinhoop|& curry|curry &/.test(n)) return true; // al gesausd
     return false;
   }
+
   const WONDER_SAUS=[
-    {m:/patat|aardappel/,                    goed:['mayonaise','currysaus','joppiesaus','speciaalsaus'], wauw:['oorlog zoet','satésaus zoet']},
-    {m:/bami|nasi/,                          goed:['satésaus zoet','currysaus'],            wauw:['chilisaus']},
-    {m:/loempia|loempidel|smulrol|shoarmarol|sitostick/, goed:['chilisaus','satésaus zoet'], wauw:['zigeunersaus']},
-    {m:/kip|nugget|wing|corn|strip|finger/,  goed:['currysaus','satésaus zoet','chilisaus'], wauw:['jambala']},
-    {m:/kaas|tengel|souffl/,                 goed:['chilisaus','ketchup'],                  wauw:['satésaus zoet']},
-    {m:/vlam|mexicano|pikanto|hete donder/,  goed:['chilisaus','zigeunersaus'],             wauw:['knoflooksaus']},
-    {m:/kroket|krokidel/,                    goed:['mayonaise','currysaus'],                wauw:['joppiesaus']},
-    {m:/bitterbal|gehaktbal|eierbal/,        goed:['mayonaise','currysaus'],                wauw:['chilisaus']},
-    {m:/frikandel/,                          goed:['currysaus','joppiesaus','mayonaise'],   wauw:['satésaus zoet']},
-    {m:/schnitzel|varken|boeren|braadworst|hamburger|berenhap|brok|trio|vlampijp/, goed:['zigeunersaus','speciaalsaus','mayonaise'], wauw:['jambala']}
+    {m:/patat|aardappel/,                    goed:['mayo','curry','joppie','speciaal'], wauw:['oorlog-zoet','sate']},
+    {m:/bami|nasi/,                          goed:['sate','curry'],            wauw:['chili']},
+    {m:/loempia|loempidel|smulrol|shoarmarol|sitostick/, goed:['chili','sate'], wauw:['zigeuner']},
+    {m:/kip|nugget|wing|corn|strip|finger/,  goed:['curry','sate','chili'],    wauw:['jambala']},
+    {m:/kaas|tengel|souffl/,                 goed:['chili','ketchup'],         wauw:['sate']},
+    {m:/vlam|mexicano|pikanto|hete donder/,  goed:['chili','zigeuner'],        wauw:['knoflook']},
+    {m:/kroket|krokidel/,                    goed:['mayo','curry'],            wauw:['joppie']},
+    {m:/bitterbal|gehaktbal|eierbal/,        goed:['mayo','curry'],            wauw:['chili']},
+    {m:/frikandel/,                          goed:['curry','joppie','mayo'],   wauw:['sate']},
+    {m:/schnitzel|varken|boeren|braadworst|hamburger|berenhap|brok|trio|vlampijp/, goed:['zigeuner','speciaal','mayo'], wauw:['jambala']}
   ];
-  const WONDER_DEFAULT={goed:['mayonaise','currysaus','joppiesaus'], wauw:['satésaus zoet']};
+  const WONDER_DEFAULT={goed:['mayo','curry','joppie'], wauw:['sate']};
+  function wonderSet(naam){ return WONDER_SAUS.find(e=>e.m.test(naam.toLowerCase()))||WONDER_DEFAULT; }
   function wonderSaus(naam){
-    const set=WONDER_SAUS.find(e=>e.m.test(naam.toLowerCase()))||WONDER_DEFAULT;
-    const wauw = Math.random()<0.3 && set.wauw && set.wauw.length;
-    return one(wauw ? set.wauw : set.goed);
+    const set=wonderSet(naam);
+    const goed=set.goed.filter(sausMag), wauw=(set.wauw||[]).filter(sausMag);
+    if(Math.random()<0.3 && wauw.length) return one(wauw);
+    if(goed.length) return one(goed);
+    if(wauw.length) return one(wauw);
+    // niks uit het profiel mag nog — pak dan wat er überhaupt nog over is
+    const rest=SAUZEN.filter(s=>sausMag(s.id) && s.id!=='ui');
+    return rest.length ? one(rest).id : null;
+  }
+  function gekSaus(){
+    const combos=SAUS_GEK.filter(comboMag);
+    if(combos.length) return one(combos).map(sausLabel).join(' + ');
+    const rest=SAUZEN.filter(s=>sausMag(s.id));
+    return rest.length ? one(rest).label : null;
+  }
+  // Krijgt deze snack sowieso saus? (deterministisch → prijs is vooraf te berekenen)
+  function krijgtSaus(naam){
+    if(geenLosseSaus(naam)) return false;
+    if(mode==='gek') return SAUS_GEK.some(comboMag) || SAUZEN.some(s=>sausMag(s.id));
+    return SAUZEN.some(s=>sausMag(s.id));
   }
   function kiesSaus(naam){
-    if(geenLosseSaus(naam)) return null;
-    return mode==='wonder' ? wonderSaus(naam) : one(SAUS_GEK);
+    if(!krijgtSaus(naam)) return null;
+    if(mode==='gek') return gekSaus();
+    const id=wonderSaus(naam);
+    return id ? sausLabel(id) : null;
   }
 
-  function verhaal(chosen, saus, shake){
+  /* ===================== SMAAKPROFIELEN & MATCH-SCORE ======================
+     Elke snack krijgt een profiel: familie (nooit twee uit dezelfde), kern
+     (waar 't écht van gemaakt is), textuur, pit, rijkheid en zeldzaamheid.
+     Daarmee scoren we honderden kandidaat-combinaties en houden we alleen de
+     top over — harmonie (matcht het?) plus wow (durft het iets?).           */
+  const PROFIELEN=[
+    {m:/slaatje|rauwkost/,               fam:'salade',    kern:'groente', tex:'fris',    pit:0, rijk:0, zeldz:2},
+    {m:/kip saté|kip sate/,              fam:'sate',      kern:'kip',     tex:'zacht',   pit:0, rijk:3, zeldz:2},
+    {m:/halve kip/,                      fam:'kipgroot',  kern:'kip',     tex:'krokant', pit:0, rijk:3, zeldz:3},
+    {m:/kipschnitzel/,                   fam:'schnitzel', kern:'kip',     tex:'krokant', pit:0, rijk:3, zeldz:2},
+    {m:/schnitzel/,                      fam:'schnitzel', kern:'vlees',   tex:'krokant', pit:0, rijk:3, zeldz:2},
+    {m:/nugget|wings|kipstrip|kipfinger|kipcorn/, fam:'kip', kern:'kip',  tex:'krokant', pit:0, rijk:2, zeldz:0},
+    {m:/kaastengel/,                     fam:'kaassnack', kern:'kaas',    tex:'krokant', pit:0, rijk:2, zeldz:2},
+    {m:/kaassouffl|ham\/kaas/,           fam:'souffle',   kern:'kaas',    tex:'krokant', pit:0, rijk:2, zeldz:0},
+    {m:/kaaskroket/,                     fam:'kroket',    kern:'kaas',    tex:'krokant', pit:0, rijk:2, zeldz:1},
+    {m:/veg\. kroket|groentekroket/,     fam:'kroket',    kern:'groente', tex:'krokant', pit:0, rijk:1, zeldz:1},
+    {m:/kroket|krokidel/,                fam:'kroket',    kern:'ragout',  tex:'krokant', pit:0, rijk:2, zeldz:0},
+    {m:/bitterbal/,                      fam:'bal',       kern:'ragout',  tex:'krokant', pit:0, rijk:2, zeldz:0},
+    {m:/gehaktbal/,                      fam:'bal',       kern:'vlees',   tex:'zacht',   pit:0, rijk:2, zeldz:1},
+    {m:/berenhap/,                       fam:'bal',       kern:'vlees',   tex:'zacht',   pit:0, rijk:2, zeldz:2},
+    {m:/vlammetjes/,                     fam:'rol',       kern:'vlees',   tex:'krokant', pit:2, rijk:2, zeldz:1},
+    {m:/mini loempia/,                   fam:'rol',       kern:'groente', tex:'krokant', pit:0, rijk:1, zeldz:1},
+    {m:/loempia/,                        fam:'rol',       kern:'groente', tex:'krokant', pit:0, rijk:2, zeldz:0},
+    {m:/mexicano|pikanto|hete donder/,   fam:'pittig',    kern:'vlees',   tex:'krokant', pit:2, rijk:2, zeldz:1},
+    {m:/loempidel|smulrol|shoarmarol|sitostick|boerenbrok|trio|vlampijp/, fam:'rol', kern:'vlees', tex:'krokant', pit:1, rijk:2, zeldz:2},
+    {m:/bami|nasi/,                      fam:'bami',      kern:'rijst',   tex:'krokant', pit:0, rijk:1, zeldz:1},
+    {m:/frikandel/,                      fam:'frikandel', kern:'vlees',   tex:'zacht',   pit:0, rijk:2, zeldz:0},
+    {m:/braadworst/,                     fam:'worst',     kern:'vlees',   tex:'zacht',   pit:0, rijk:2, zeldz:1},
+    {m:/hamburger/,                      fam:'burger',    kern:'vlees',   tex:'zacht',   pit:0, rijk:2, zeldz:1}
+  ];
+  const PROFIEL_DEFAULT={fam:'overig', kern:'vlees', tex:'krokant', pit:0, rijk:2, zeldz:1};
+  const _profCache={};
+  function prof(s){
+    if(_profCache[s.n]) return _profCache[s.n];
+    const p={...(PROFIELEN.find(e=>e.m.test(s.n.toLowerCase()))||PROFIEL_DEFAULT)};
+    delete p.m;
+    if(s.vega && p.kern==='vlees') p.kern='vega';       // vega frikandel botst niet met echt vlees
+    if(s.p>=4.2) p.rijk+=1;                             // grotere porties vullen zwaarder
+    if(s.p>=6.5) p.rijk+=2;                             // halve kip / 20 nuggets = een maaltijd op zich
+    if(s.p>=5) p.zeldz+=1;                              // de grote jongens zie je zelden
+    return _profCache[s.n]=p;
+  }
+
+  // Paren die verrassen én kloppen — de 'wow, hier had ik nooit aan gedacht'-as.
+  const WOW_PAREN=[
+    {a:'kaas',   b:'kip',     pt:6, r:'kaas naast kip — niemand bestelt dat samen, en dat is precies waarom het werkt'},
+    {a:'kaas',   b:'groente', pt:5, r:'smeltende kaas tegen iets groens'},
+    {a:'kip',    b:'ragout',  pt:5, r:'stevige kip tegenover romige ragout'},
+    {a:'rijst',  b:'kip',     pt:6, r:'oosters en frituur in dezelfde hand'},
+    {a:'rijst',  b:'kaas',    pt:5, r:'bami en kaas — foute combinatie op papier, feest in het vet'},
+    {a:'kaas',   b:'ragout',  pt:4, r:'twee soorten smelt onder twee soorten korst'},
+    {a:'groente',b:'vlees',   pt:3, r:'groen naast vlees, netjes in balans'},
+    {a:'vega',   b:'kaas',    pt:4, r:'vega met kaas — verrassend compleet'},
+    {a:'kip',    b:'groente', pt:4, r:'kip met iets groens ertegenaan'}
+  ];
+  function wowPaar(a,b){ return WOW_PAREN.find(w=>(w.a===a&&w.b===b)||(w.a===b&&w.b===a)); }
+
+  /* ===== geheugen: niet twee keer achter elkaar hetzelfde ===== */
+  const HKEY='snackorakel_hist_v1';
+  let HIST={snacks:[],combos:[]};
+  try{ const h=JSON.parse(localStorage.getItem(HKEY)); if(h&&h.snacks) HIST=h; }catch(e){}
+  const sig = items => items.map(s=>s.n).sort().join('|');
+  function onthoud(items){
+    items.forEach(s=>HIST.snacks.unshift(s.n));
+    HIST.snacks=HIST.snacks.slice(0,10);
+    HIST.combos.unshift(sig(items));
+    HIST.combos=HIST.combos.slice(0,15);
+    try{ localStorage.setItem(HKEY,JSON.stringify(HIST)); }catch(e){}
+  }
+
+  /* Scoort één kandidaat-combinatie. null = botweg afgekeurd. */
+  function scoreCombo(items, ctx){
+    const p=items.map(prof);
+    for(let i=0;i<p.length;i++) for(let j=i+1;j<p.length;j++)
+      if(p[i].fam===p[j].fam) return null;              // nooit twee uit dezelfde familie
+    let harm=0, wow=0; const redenen=[];
+
+    for(let i=0;i<p.length;i++) for(let j=i+1;j<p.length;j++){
+      harm += p[i].kern===p[j].kern ? -8 : 3;           // twee keer dezelfde kern = saai
+      if(p[i].tex!==p[j].tex){
+        harm+=4;
+        const paar=[p[i].tex,p[j].tex];
+        if(paar.includes('krokant')&&paar.includes('zacht')){ harm+=3; redenen.push('krokant tegenover zacht'); }
+      } else harm-=2;
+      const w=wowPaar(p[i].kern,p[j].kern);
+      if(w){ wow+=w.pt; redenen.push(w.r); }
+    }
+
+    const pit=p.reduce((a,x)=>a+x.pit,0);
+    if(items.length>1){
+      if(pit>=1&&pit<=2){ harm+=4; redenen.push('één pittige die de rest wakker schudt'); }
+      if(pit===0) harm-=1;
+      if(pit>3) harm-=7;                                // alles vuur = niks proeven
+    }
+    const rijk=p.reduce((a,x)=>a+x.rijk,0)+(ctx.patat?2:0)+(ctx.shake?1:0);
+    const fris=p.some(x=>x.tex==='fris');
+    if(fris && rijk>=4){ harm+=8; redenen.push('iets fris dat dwars door het vet snijdt'); }
+    if(!fris && rijk>=8) harm-=5;
+    if(rijk>=11) harm-=6;
+    if(ctx.patat) harm += p.every(x=>x.tex==='krokant') ? -4 : 2;   // patat is al krokant
+
+    wow += p.reduce((a,x)=>a+x.zeldz,0)*2.4;            // zeldzame snacks = verrassing
+    items.forEach(s=>{ const i=HIST.snacks.indexOf(s.n); if(i>=0) wow-=(11-i); });
+    if(HIST.combos.includes(sig(items))) wow-=60;       // net gehad? volgende.
+
+    const totaal = mode==='wonder' ? harm + wow*0.8 : wow*1.4 - harm*0.9;
+    return {harm, wow, totaal, redenen};
+  }
+
+  /* Trekt één kandidaat uit de pool, met respect voor de kip-instelling. */
+  function trekItems(pool){
+    if(kipMode==='altijd'){
+      const kipPool=pool.filter(s=>isKip(s.n));
+      if(kipPool.length){
+        const kip=one(kipPool);
+        const rest=pick(pool.filter(s=>s!==kip), nSnacks-1);
+        return pick([kip,...rest], nSnacks);            // shuffle: kip niet altijd vooraan
+      }
+    }
+    return pick(pool, nSnacks);
+  }
+
+  const N_KANDIDATEN=300;
+  /* Bouwt honderden combinaties, scoort ze en pakt gewogen uit de topband —
+     zo is 't altijd goed, maar nooit twee keer hetzelfde. */
+  function kiesCombinatie(ctx, limiet){
+    const pool=snackPool();
+    if(!pool.length) return {items:[], redenen:[]};
+    const gezien={}, kandidaten=[];
+    for(let i=0;i<N_KANDIDATEN;i++){
+      const items=trekItems(pool);
+      if(!items.length) continue;
+      const k=sig(items);
+      if(gezien[k]) continue;
+      gezien[k]=1;
+      const sc=scoreCombo(items,ctx);
+      if(!sc) continue;
+      const kosten=combiKosten(items,ctx);
+      let totaal=sc.totaal;
+      if(limiet!=null && kosten>limiet+0.001) totaal -= 60+(kosten-limiet)*10;  // budget als zwaartekracht
+      kandidaten.push({items, redenen:sc.redenen, totaal, kosten});
+    }
+    // Past er niets binnen het budget? Nog een gerichte ronde uit de goedkoopste hoek.
+    if(limiet!=null && !kandidaten.some(k=>k.kosten<=limiet+0.001)){
+      const kost = s => s.p+(krijgtSaus(s.n)?SAUS_PRIJS:0);
+      const goedkoop=[...pool].sort((a,b)=>kost(a)-kost(b)).slice(0, Math.max(10, Math.ceil(pool.length*0.4)));
+      for(let i=0;i<N_KANDIDATEN;i++){
+        const items=trekItems(goedkoop);
+        if(!items.length) continue;
+        const k=sig(items);
+        if(gezien[k]) continue;
+        gezien[k]=1;
+        const sc=scoreCombo(items,ctx);
+        if(!sc) continue;
+        const kosten=combiKosten(items,ctx);
+        let totaal=sc.totaal;
+        if(kosten>limiet+0.001) totaal -= 60+(kosten-limiet)*10;
+        kandidaten.push({items, redenen:sc.redenen, totaal, kosten});
+      }
+    }
+    if(!kandidaten.length) return {items:trekItems(pool), redenen:[]};
+    kandidaten.sort((a,b)=>b.totaal-a.totaal);
+    // budget is een plafond: past er iets binnen, dan kiezen we alleen daaruit
+    let veld=kandidaten;
+    if(limiet!=null){ const past=kandidaten.filter(k=>k.kosten<=limiet+0.001); if(past.length) veld=past; }
+    const top=veld.slice(0, Math.max(3, Math.ceil(veld.length*0.12)));
+    // gewogen op rang: de beste heeft de meeste kans, de rest houdt 't spannend
+    let gewicht=0; const w=top.map((_,i)=>{const g=top.length-i; gewicht+=g; return g;});
+    let r=Math.random()*gewicht;
+    for(let i=0;i<top.length;i++){ r-=w[i]; if(r<=0) return top[i]; }
+    return top[0];
+  }
+
+  // Exacte prijs van een combinatie (saus-ja/nee ligt vast, dus dit klopt op de cent).
+  function combiKosten(items, ctx){
+    let t=items.reduce((a,s)=>a+s.p+(krijgtSaus(s.n)?SAUS_PRIJS:0),0);
+    if(ctx.patat) t+=patatPrijs+(krijgtSaus(`Patat ${patatSize}`)?SAUS_PRIJS:0);
+    if(ctx.shake) t+=shakePrijs;
+    return t;
+  }
+
+  /* ===== het verhaaltje — vertelt nu wáárom het klopt ===== */
+  function verhaal(chosen, saus, shake, redenen){
     const a=chosen[0].n;
     const multi=chosen.length>1;
-    const combo = multi ? `${a} en ${chosen[1].n}` : a;
+    const combo = multi ? chosen.slice(0,-1).map(s=>s.n).join(', ')+' en '+chosen[chosen.length-1].n : a;
     const shakeBit = shake ? ` De ${shake} milkshake spoelt het weg als een beloning.` : '';
     const metSaus = saus ? ` met ${saus}` : '';
     const sausAf = saus ? ` Een lik ${saus}, en de avond is geslaagd.` : '';
-    const sausErover = saus ? ` Met ${saus} erover wordt het pas echt af.` : '';
     const sausGoten = saus ? ` overgoten met ${saus}` : '';
-    const onderwerp = multi ? combo : `de ${a}`;
+    const reden = redenen.length ? one(redenen) : null;
+    const redenZin = reden ? ` ${reden.charAt(0).toUpperCase()+reden.slice(1)}.` : '';
     const wonder = multi ? [
-      `Het orakel legde ${combo} naast elkaar en knikte traag: knapperig, hartig, in balans.${sausErover}${shakeBit}`,
-      `${combo}${metSaus} — een combinatie die klinkt als een klassieker-in-wording. Dit bestel je met droge ogen.`,
-      `Vertrouw het orakel: ${combo} horen samen zoals vrijdag en frituur.${sausAf}${shakeBit}`
+      `Het orakel legde ${combo} naast elkaar en knikte traag.${redenZin}${shakeBit}`,
+      `${combo}${metSaus}. Niet omdat het moet, maar omdat het klópt:${reden?` ${reden}`:' knapperig, hartig, in balans'}.${shakeBit}`,
+      `Vertrouw het orakel: ${combo} horen samen.${redenZin}${sausAf}${shakeBit}`
     ] : [
-      `Het orakel bekeek ${onderwerp} van alle kanten en knikte traag: knapperig, hartig, precies goed.${sausErover}${shakeBit}`,
+      `Het orakel bekeek de ${a} van alle kanten en knikte traag: knapperig, hartig, precies goed.${saus?` Met ${saus} erover wordt het pas echt af.`:''}${shakeBit}`,
       `${a}${metSaus} is geen gok maar een klassieker. Dit bestel je met droge ogen — Karst-keurmerk.`,
       `Vertrouw het orakel: ${a}${metSaus} hoort bij een goede vrijdagavond.${shakeBit}`
     ];
@@ -529,21 +820,13 @@
   }
 
   // Bouwt de uitkomst: snacks + sauzen + patat + shake + verhaal.
-  function maakOrder(){
-    const pool = snackPool();
-    let chosen;
-    if(kipMode==='altijd'){
-      const kipPool = pool.filter(s=>isKip(s.n));
-      if(kipPool.length){                       // forceer minstens één kipsnack
-        const kip = one(kipPool);
-        const rest = pick(pool.filter(s=>s!==kip), nSnacks-1);
-        chosen = pick([kip, ...rest], nSnacks);  // shuffle: kip niet altijd vooraan
-      } else {
-        chosen = pick(pool, nSnacks);            // geen kip mogelijk (bv. alleen-vega)
-      }
-    } else {
-      chosen = pick(pool, nSnacks);
-    }
+  function maakOrder(limiet){
+    const ctx={
+      patat: document.getElementById('t-patat').classList.contains('on'),
+      shake: document.getElementById('t-shake').classList.contains('on')
+    };
+    const keuze=kiesCombinatie(ctx, limiet);
+    const chosen=keuze.items;
 
     let tot=0; const lines=[]; const reelItems=[]; const snackNamen=[];
     chosen.forEach(s=>{
@@ -553,18 +836,18 @@
       snackNamen.push(s.n);
     });
     let patat=null, shake=null;
-    if(document.getElementById('t-patat').classList.contains('on')){
+    if(ctx.patat){
       const saus=kiesSaus(`Patat ${patatSize}`); tot+=patatPrijs+(saus?SAUS_PRIJS:0);
       patat={naam:`Patat ${patatSize}`, prijs:patatPrijs, saus};
       reelItems.push({emoji:'🍟', label:`Patat ${patatSize}`});
     }
-    if(document.getElementById('t-shake').classList.contains('on')){
+    if(ctx.shake){
       const smaak=randSmaak(); tot+=shakePrijs;
       shake={naam:`Milkshake ${shakeSize}`, smaak, prijs:shakePrijs};
       reelItems.push({emoji:'🥤', label:smaak});
     }
     const repSaus = (lines.find(l=>l.saus)||{}).saus || (patat&&patat.saus) || null;
-    const story = verhaal(chosen, repSaus, shake?shake.smaak:null);
+    const story = verhaal(chosen, repSaus, shake?shake.smaak:null, keuze.redenen||[]);
     return {chosen, lines, patat, shake, tot, story, reelItems, snackNamen};
   }
 
@@ -656,16 +939,10 @@
     (b)=>`${eur(b)}? Ambitieus. Het orakel deed z'n best, maar de frituur kent geen wonderen voor dat bedrag.`
   ];
   function kiesOrder(){
-    if(!budgetOn) return maakOrder();
-    let best=maakOrder();
-    if(best.tot<=budget) return best;
-    for(let i=0;i<200 && best.tot>budget;i++){
-      const c=maakOrder();
-      if(c.tot<best.tot) best=c;
-      if(best.tot<=budget) break;
-    }
-    if(best.tot>budget){ best.overBudget=true; best.story=one(KRAP)(budget); }
-    return best;
+    const order=maakOrder(budgetOn?budget:null);
+    if(budgetOn && order.tot>budget+0.001){ order.overBudget=true; order.story=one(KRAP)(budget); }
+    onthoud(order.chosen);
+    return order;
   }
 
   /* =========================== HOOFD-FLOW ================================== */

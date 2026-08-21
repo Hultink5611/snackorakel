@@ -7,10 +7,28 @@ uit — als kassabon, met een mini-verhaaltje.
 **Live:** https://hultink5611.github.io/snackorakel/
 
 ## Wat het doet
-- **Wonder** ✨ — verrassend lekkere combinaties met passende sauzen (gecureerd, soms een WAUW-combo).
-- **Gek** 🤪 — absurde-maar-echte combinaties van het Karst-menu.
-- Slot-machine met geluid (mute-knop), 1–3 snacks, vega-filter, patat, milkshake, en een budget-plafond.
+- **Wonder** ✨ — combinaties die écht matchen: elke draai bouwt honderden kandidaten,
+  scoort ze op smaakprofiel en kiest gewogen uit de topband.
+- **Gek** 🤪 — dezelfde motor, maar omgedraaid: maximale verrassing, minimale harmonie.
+- **Sauzen aan/uit** — klik weg wat je nooit wilt; samengestelde sauzen vallen automatisch mee af
+  (satésaus uit ⇒ ook oorlog eruit).
+- Slot-machine met geluid (mute-knop), 1–3 snacks, vega-filter, kipfilter, patat, milkshake en een budget-plafond.
 - Kassabon kopiëren (alleen de snacks).
+
+## Hoe de combinatie tot stand komt
+Elke snack heeft een profiel: **familie** (nooit twee uit dezelfde), **kern** (vlees, kip, kaas,
+ragout, groente, rijst), **textuur** (krokant / zacht / fris), **pit**, **rijkheid** en
+**zeldzaamheid**. Per draai worden ~300 kandidaat-combinaties gescoord op twee assen:
+
+- **harmonie** — verschillende kernen, krokant tegenover zacht, hooguit één pittige,
+  iets fris als het zwaar wordt, en geen vetstapeling (patat telt mee).
+- **wow** — zeldzame snacks, verrassende-maar-kloppende kernparen (kaas × kip, bami × kaas),
+  en een straf op alles wat je de laatste draaien al hebt gehad.
+
+Wonder telt beide op, Gek trekt harmonie er juist vanaf. Uit de top 12% wordt gewogen gekozen,
+dus het is altijd goed, maar nooit twee keer hetzelfde. Staat er een budget aan, dan is dat een
+hard plafond: er wordt alleen gekozen uit combinaties die eronder passen — de lekkerste, niet
+de goedkoopste. Het verhaaltje op de bon vertelt wáárom de combinatie klopt.
 
 ## Techniek
 Eén `index.html` — vanilla HTML/CSS/JS, geen build-step, geen backend, geen API.
