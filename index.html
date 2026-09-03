@@ -710,13 +710,9 @@
   async function toonStats(){
     const box=document.getElementById('stats'); if(!box) return;
     box.classList.add('show');
-    let rijen=lees(LOG_KEY,[]), bron='dit toestel';
-    if(LOG_ENDPOINT){
-      try{
-        const res=await fetch(LOG_ENDPOINT+'/stats');
-        if(res.ok){ const d=await res.json(); if(Array.isArray(d.draaien)){ rijen=d.draaien; bron='alle toestellen'; } }
-      }catch(e){ /* val terug op lokaal */ }
-    }
+    // Het overzicht van alle toestellen zit achter de admin-login op de Worker
+    // (/admin). Hier tonen we alleen wat er op dit toestel gedraaid is.
+    const rijen=lees(LOG_KEY,[]);
     const per={};
     rijen.forEach(r=>{
       const k=r.naam||'Anoniem';
@@ -727,7 +723,7 @@
     const namen=Object.entries(per).sort((a,b)=>b[1].n-a[1].n);
     const datum=iso=>{ const d=new Date(iso); return isNaN(d)?'—':d.toLocaleString('nl-NL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}); };
     box.innerHTML =
-      `<h2>Wie draaide er?</h2><div class="bron">${rijen.length} draaien · bron: ${bron}</div>`+
+      `<h2>Wie draaide er?</h2><div class="bron">${rijen.length} draaien op dit toestel · het totaaloverzicht staat op /admin</div>`+
       (namen.length
         ? namen.map(([n,v])=>`<div class="statrij"><b>${n}</b><span>${v.n}× · laatst ${datum(v.laatst)}</span></div>`).join('')
         : `<div class="statrij"><span>Nog niemand gedraaid.</span></div>`)+

@@ -21,12 +21,36 @@ Tabel opnieuw opzetten (bijvoorbeeld in een nieuwe database):
 npx wrangler d1 execute snackorakel-db --remote --file=schema.sql
 ```
 
+## Dashboard
+
+**https://snackorakel-log.markhultink.workers.dev/admin** — het wachtwoord staat
+als secret `ADMIN_WACHTWOORD` in de Worker, niet in de broncode van de app. Na
+inloggen zet de Worker een ondertekende HttpOnly-cookie (HMAC-SHA256, 30 dagen);
+zonder het wachtwoord is die niet te vervalsen. Uitloggen kan rechtsboven.
+
+Wachtwoord wijzigen:
+
+```bash
+npx wrangler secret put ADMIN_WACHTWOORD
+```
+
+Dat verbreekt meteen alle bestaande sessies, want de cookie is met het oude
+wachtwoord ondertekend.
+
 ## Eindpunten
 
-| Methode | Pad      | Wat het doet                                              |
-|---------|----------|-----------------------------------------------------------|
-| POST    | `/draai` | `{draaien:[…]}` wegschrijven (de app stuurt z'n wachtrij) |
-| GET     | `/stats` | Laatste 1000 draaien, nieuwste eerst                      |
+| Methode | Pad          | Toegang        | Wat het doet                                       |
+|---------|--------------|----------------|-----------------------------------------------------|
+| POST    | `/draai`     | open           | `{draaien:[…]}` wegschrijven (de app z'n wachtrij) |
+| GET     | `/admin`     | wachtwoord     | dashboard: per persoon, top-snacks, alle draaien   |
+| POST    | `/admin`     | —              | inloggen                                            |
+| GET     | `/admin/uit` | —              | uitloggen                                           |
+| GET     | `/stats`     | sessie vereist | dezelfde data als JSON                              |
+
+`POST /draai` moet open blijven: de app is een publieke pagina en heeft geen
+sessie. Wil je ook dat dichttimmeren, zet dan `SCHRIJF_SLEUTEL` als secret en
+stuur die mee als `X-Sleutel`-header — al staat die dan wel in de broncode van
+de app, dus het houdt alleen toevallige voorbijgangers tegen.
 
 ## Wat de app doet zonder Worker
 
