@@ -169,6 +169,8 @@
   .chip{font-size:12px; font-weight:700; padding:6px 10px; border-radius:999px; line-height:1.1; cursor:pointer;
     border:2.5px solid var(--bruin); background:var(--wit); color:var(--bruin)}
   .chip.off{background:#e8dac6; border-color:#c2ab8c; color:#a08b72; text-decoration:line-through}
+  .chip.groep{background:var(--geel); border-color:var(--geel-warm)}
+  .chip.groep.off{background:#e8dac6; border-color:#c2ab8c}
   .sausnote{font-size:11.5px; color:#8a7560; margin-top:8px; line-height:1.4}
   .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); background:var(--bruin); color:var(--creme);
     padding:10px 18px; border-radius:10px; font-weight:600; font-size:14px; opacity:0; pointer-events:none; transition:.25s; z-index:50}
@@ -264,6 +266,7 @@
           <span class="sl">Sauzen</span>
           <span class="chiplink" id="saus-reset" onclick="alleSauzenAan()">alles aan</span>
         </div>
+        <div class="chips" id="saus-groepen"></div>
         <div class="chips" id="saus-chips"></div>
         <div class="sausnote" id="saus-note"></div>
       </div>
@@ -352,17 +355,22 @@
     {id:'joppie',      label:'joppiesaus',      uit:['joppie']},
     {id:'speciaal',    label:'speciaalsaus',    uit:['speciaal','mayo','curry','ui']},
     {id:'sate',        label:'satésaus zoet',   uit:['sate']},
-    {id:'sate-scherp', label:'satésaus scherp', uit:['sate-scherp','sate']},
-    {id:'chili',       label:'chilisaus',       uit:['chili']},
+    {id:'sate-scherp', label:'satésaus scherp', uit:['sate-scherp','sate','pit']},
+    {id:'chili',       label:'chilisaus',       uit:['chili','pit']},
     {id:'zigeuner',    label:'zigeunersaus',    uit:['zigeuner']},
     {id:'knoflook',    label:'knoflooksaus',    uit:['knoflook']},
-    {id:'jambala',     label:'jambala',         uit:['jambala']},
+    {id:'jambala',     label:'jambala',         uit:['jambala','pit']},
     {id:'appelmoes',   label:'appelmoes',       uit:['appelmoes']},
     {id:'ui',          label:'extra ui',        uit:['ui']},
     {id:'oorlog-zoet', label:'oorlog zoet',     uit:['oorlog-zoet','mayo','sate','ui']},
-    {id:'oorlog-scherp',label:'oorlog scherp',  uit:['oorlog-scherp','mayo','sate','ui']}
+    // oorlog scherp = mayo + satésaus SCHERP + ui — dus ook weg zodra scherp of pit uit staat
+    {id:'oorlog-scherp',label:'oorlog scherp',  uit:['oorlog-scherp','mayo','sate-scherp','sate','ui','pit']}
   ];
-  const SAUS = Object.fromEntries(SAUZEN.map(s=>[s.id,s]));
+  /* Groepsknop: één tik zet alles wat pit heeft in één keer uit. */
+  const SAUS_GROEPEN=[
+    {id:'pit', label:'🌶️ alles pittig', uit:['pit']}
+  ];
+  const SAUS = Object.fromEntries([...SAUZEN,...SAUS_GROEPEN].map(s=>[s.id,s]));
   const sausLabel = id => (SAUS[id]||{label:id}).label;
   // Mag deze saus (of saus-combi) op de bon?
   const sausMag = id => !(SAUS[id]||{uit:[id]}).uit.some(x=>sausUit.has(x));
@@ -457,16 +465,20 @@
   }
   function renderSausChips(){
     const box=document.getElementById('saus-chips'); if(!box) return;
-    box.innerHTML='';
-    SAUZEN.forEach(s=>{
+    const chip=(s,groep)=>{
       const b=document.createElement('button');
       b.type='button';
-      b.className='chip'+(sausMag(s.id)?'':' off');
+      b.className='chip'+(groep?' groep':'')+(sausMag(s.id)?'':' off');
       b.textContent=s.label;
       b.title=sausMag(s.id)?`${s.label} mag op de bon — tik om uit te zetten`:`${s.label} staat uit`;
       b.onclick=()=>toggleSaus(s.id);
-      box.appendChild(b);
-    });
+      return b;
+    };
+    const groepen=document.getElementById('saus-groepen');
+    groepen.innerHTML='';
+    SAUS_GROEPEN.forEach(g=>groepen.appendChild(chip(g,true)));
+    box.innerHTML='';
+    SAUZEN.forEach(s=>box.appendChild(chip(s,false)));
     const note=document.getElementById('saus-note');
     const uit=SAUZEN.filter(s=>!sausMag(s.id));
     const eigenUit=[...sausUit];
