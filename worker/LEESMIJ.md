@@ -2,33 +2,24 @@
 
 Houdt bij wie er wanneer aan het orakel gedraaid heeft. Cloudflare Worker + D1.
 
-## Eenmalig opzetten
+## Status: draait
 
-De database **bestaat al** (`snackorakel-db`, regio WEUR, id staat in
-`wrangler.toml`) en de tabel `draaien` met beide indexen is aangemaakt. Wat nog
-moet gebeuren is het deployen van de Worker zelf:
+- **Worker:** `snackorakel-log` → https://snackorakel-log.markhultink.workers.dev
+- **Database:** `snackorakel-db` (D1, regio WEUR), tabel `draaien` + indexen
+- **Gekoppeld in de app:** `LOG_ENDPOINT` in `index.html`
+
+Opnieuw uitrollen na een wijziging in `worker.js`:
 
 ```bash
 cd worker
-npx wrangler login     # eenmalig, opent je browser
-npx wrangler deploy    # geeft de https://…workers.dev URL
+npx wrangler deploy
 ```
 
-`schema.sql` staat erbij voor als je de tabel ooit opnieuw moet opzetten:
+Tabel opnieuw opzetten (bijvoorbeeld in een nieuwe database):
 
 ```bash
 npx wrangler d1 execute snackorakel-db --remote --file=schema.sql
 ```
-
-Zet die URL in `index.html` bij `const LOG_ENDPOINT = '…'` (zonder slash op het eind).
-
-Wil je een gedeeld wachtwoord op het schrijven:
-
-```bash
-npx wrangler secret put SCHRIJF_SLEUTEL
-```
-
-Stuur die dan mee als `X-Sleutel`-header vanuit de app.
 
 ## Eindpunten
 

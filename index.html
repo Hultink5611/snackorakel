@@ -596,7 +596,7 @@
      bevat, wordt die wachtrij afgewerkt (mislukte pogingen blijven staan en gaan
      bij de volgende draai opnieuw mee). Zonder endpoint blijft alles op het
      toestel — de app werkt dan gewoon door.                                  */
-  const LOG_ENDPOINT = '';            // ← Cloudflare Worker-URL, bv. https://snackorakel-log.<naam>.workers.dev
+  const LOG_ENDPOINT = 'https://snackorakel-log.markhultink.workers.dev';   // Cloudflare Worker + D1
   const NAAM_KEY='snackorakel_naam_v1', APPARAAT_KEY='snackorakel_apparaat_v1';
   const LOG_KEY='snackorakel_log_v1', WACHTRIJ_KEY='snackorakel_wachtrij_v1';
   const MENU_BIJGEWERKT='juni 2026';  // bron: Jamezz QR-menukaart van Karst
