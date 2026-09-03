@@ -1,0 +1,8 @@
+name = "snackorakel-log"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "snackorakel-db"
+database_id = "a67517e5-d56b-4dab-bf61-44cd498692e6"
