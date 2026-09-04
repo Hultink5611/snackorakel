@@ -987,10 +987,8 @@
   const one=a=>a[Math.random()*a.length|0];
   const eur=v=>'€'+v.toFixed(2).replace('.',',');
 
-  function randSmaak(){
-    if(mode==='gek' && Math.random()<0.6){ const [a,b]=pick(SHAKE_SMAKEN,2); return `${a}–${b} swirl`; }
-    return one(SHAKE_SMAKEN);
-  }
+  // Eén smaak per shake — een swirl kan Karst niet draaien.
+  function randSmaak(){ return one(SHAKE_SMAKEN); }
 
   /* ===== Saus-logica =====
      Geen dubbele saus (snacks die 'm al in de naam hebben), geen losse saus op
@@ -1029,21 +1027,27 @@
     const rest=SAUZEN.filter(s=>sausMag(s.id) && s.id!=='ui');
     return rest.length ? one(rest).id : null;
   }
-  function gekSaus(){
-    const combos=SAUS_GEK.filter(comboMag);
-    if(combos.length) return one(combos).map(sausLabel).join(' + ');
+  // In Gek blijft het bij één saus per snack; alleen bij drie snacks mag er
+  // precies één dubbele tussen zitten, anders is het geen bestelling meer.
+  const gekCombis = () => SAUS_GEK.filter(c => c.length > 1 && comboMag(c));
+  function gekSaus(magCombi){
+    if(magCombi){
+      const c=gekCombis();
+      if(c.length) return one(c).map(sausLabel).join(' + ');
+    }
+    const enkel=SAUZEN.filter(s=>sausMag(s.id) && s.id!=='ui');   // 'extra ui' alleen als toevoeging
+    if(enkel.length) return one(enkel).label;
     const rest=SAUZEN.filter(s=>sausMag(s.id));
     return rest.length ? one(rest).label : null;
   }
   // Krijgt deze snack sowieso saus? (deterministisch → prijs is vooraf te berekenen)
   function krijgtSaus(naam){
     if(geenLosseSaus(naam)) return false;
-    if(mode==='gek') return SAUS_GEK.some(comboMag) || SAUZEN.some(s=>sausMag(s.id));
     return SAUZEN.some(s=>sausMag(s.id));
   }
-  function kiesSaus(naam){
+  function kiesSaus(naam, magCombi){
     if(!krijgtSaus(naam)) return null;
-    if(mode==='gek') return gekSaus();
+    if(mode==='gek') return gekSaus(magCombi);
     const id=wonderSaus(naam);
     return id ? sausLabel(id) : null;
   }
@@ -1267,8 +1271,10 @@
     const chosen=keuze.items;
 
     let tot=0; const lines=[]; const reelItems=[]; const snackNamen=[];
-    chosen.forEach(s=>{
-      const saus=kiesSaus(s.n); tot+=s.p+(saus?SAUS_PRIJS:0);
+    // hooguit één dubbele saus, en alleen op een bon met drie snacks
+    const combiOp = (mode==='gek' && chosen.length===3) ? (Math.random()*3|0) : -1;
+    chosen.forEach((s,i)=>{
+      const saus=kiesSaus(s.n, i===combiOp); tot+=s.p+(saus?SAUS_PRIJS:0);
       lines.push({type:'snack', naam:s.n, prijs:s.p, vega:s.vega, saus});
       reelItems.push({emoji:emojiFor(s.n), label:s.n});
       snackNamen.push(s.n);
