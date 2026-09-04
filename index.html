@@ -1004,8 +1004,15 @@
     g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.start(t); o.stop(t+dur+0.02);
   }
   function tick(){ blip(1100+Math.random()*500,0.045,'square',0.05); }
-  function ding(){ blip(880,0.12,'triangle',0.18); setTimeout(()=>blip(1320,0.22,'triangle',0.18),70); }
-  function jackpot(){ [660,880,1100,1320,1660].forEach((f,i)=>setTimeout(()=>blip(f,0.18,'square',0.12),i*70)); }
+  // Wonder klinkt als een speelhal, Gek als een circus.
+  function ding(){
+    if(mode==='gek'){ blip(430,0.10,'sawtooth',0.15); setTimeout(()=>blip(300,0.17,'sawtooth',0.15),85); return; }
+    blip(880,0.12,'triangle',0.18); setTimeout(()=>blip(1320,0.22,'triangle',0.18),70);
+  }
+  function jackpot(){
+    if(mode==='gek'){ [520,700,900,1150,1450,1150,1450].forEach((f,i)=>setTimeout(()=>blip(f,0.13,'sawtooth',0.11),i*85)); return; }
+    [660,880,1100,1320,1660].forEach((f,i)=>setTimeout(()=>blip(f,0.18,'square',0.12),i*70));
+  }
   function toggleMute(){ muted=!muted; document.getElementById('mute').textContent=muted?'🔇':'🔊'; if(!muted)ac(); }
 
   /* =========================== GENERATIE =================================== */
