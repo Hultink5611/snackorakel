@@ -234,6 +234,19 @@
     border-bottom:1px dashed rgba(252,191,73,.3)}
   .favrij span:last-child{color:var(--geel); font-weight:800; white-space:nowrap}
   .kluisleeg{text-align:center; color:var(--creme); font-family:'Bree Serif',serif; font-size:14px; opacity:.9; padding:30px 10px; line-height:1.6}
+  /* ---- eigen ja/nee-dialoog i.p.v. de kale browserpopup ---- */
+  .vraag{position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; padding:24px; z-index:80}
+  .vraag.show{display:flex}
+  .vraagkaart{background:var(--creme); border:5px solid var(--geel); border-radius:16px; padding:20px 18px 18px; max-width:320px; width:100%;
+    text-align:center; box-shadow:0 10px 0 rgba(0,0,0,.35)}
+  .vraagkaart p{font-family:'Anton',sans-serif; font-size:21px; text-transform:uppercase; line-height:1.15; letter-spacing:.3px; margin-bottom:16px}
+  .vraagknoppen{display:flex; gap:10px}
+  .vraagknoppen button{flex:1; font-family:'Anton',sans-serif; text-transform:uppercase; font-size:15px; letter-spacing:.4px;
+    cursor:pointer; border-radius:11px; padding:11px 8px; border:3px solid var(--bruin); background:var(--wit); color:var(--bruin);
+    box-shadow:0 3px 0 var(--bruin); transition:transform .06s}
+  .vraagknoppen button:active{transform:translateY(3px); box-shadow:0 0 0 var(--bruin)}
+  .vraagknoppen .ja{background:var(--rood); border-color:var(--rood-diep); color:var(--wit); box-shadow:0 3px 0 var(--rood-diep)}
+  .vraagknoppen .ja:active{box-shadow:0 0 0 var(--rood-diep)}
   .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); background:var(--bruin); color:var(--creme);
     padding:10px 18px; border-radius:10px; font-weight:600; font-size:14px; opacity:0; pointer-events:none; transition:.25s; z-index:50}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
@@ -382,6 +395,16 @@
       <button class="sluit" onclick="sluitKluis()" title="Sluiten">✕</button>
     </div>
     <div id="kluis-inhoud"></div>
+  </div>
+</div>
+
+<div class="vraag" id="vraag" onclick="if(event.target===this)vraagAntwoord(false)">
+  <div class="vraagkaart">
+    <p id="vraag-tekst"></p>
+    <div class="vraagknoppen">
+      <button class="nee" onclick="vraagAntwoord(false)">Laat maar</button>
+      <button class="ja" onclick="vraagAntwoord(true)">Weggooien</button>
+    </div>
   </div>
 </div>
 
@@ -862,6 +885,20 @@
     }).join('');
   }
 
+  /* ===== eigen ja/nee-dialoog ===== */
+  let vraagAntwoordt=null;
+  function vraagJaNee(tekst){
+    return new Promise(klaar=>{
+      document.getElementById('vraag-tekst').textContent=tekst;
+      document.getElementById('vraag').classList.add('show');
+      vraagAntwoordt=klaar;
+    });
+  }
+  function vraagAntwoord(ja){
+    document.getElementById('vraag').classList.remove('show');
+    if(vraagAntwoordt){ const k=vraagAntwoordt; vraagAntwoordt=null; k(ja); }
+  }
+
   /* ===== bewerken ===== */
   const vindSpin = (spins,id) => spins.findIndex(s=>s.id===id);
   function duimOm(id, i){
@@ -870,18 +907,20 @@
     r.duim=!r.duim;
     schrijfKluis(spins); tekenKluis();
   }
-  function wisRegel(id, i){
-    const spins=leesKluis(), k=vindSpin(spins,id); if(k<0) return;
+  async function wisRegel(id, i){
+    let spins=leesKluis(); const k=vindSpin(spins,id); if(k<0) return;
     const r=spins[k].regels[i]; if(!r) return;
-    if(!confirm(`"${r.naam}" uit deze spin verwijderen?`)) return;
+    if(!await vraagJaNee(`${r.naam} weggooien?`)) return;
+    spins=leesKluis(); if(vindSpin(spins,id)<0) return;   // kan intussen weg zijn
     spins[k].tot = Math.max(0, +(spins[k].tot - r.prijs - (r.saus?SAUS_PRIJS:0)).toFixed(2));
     spins[k].regels.splice(i,1);
     if(!spins[k].regels.length && !spins[k].patat && !spins[k].shake) spins.splice(k,1);  // niets meer over
     schrijfKluis(spins); tekenKluis(); toast('Snack verwijderd');
   }
-  function wisSpin(id){
-    const spins=leesKluis(), k=vindSpin(spins,id); if(k<0) return;
-    if(!confirm('Deze hele spin uit je frituurkluis verwijderen?')) return;
+  async function wisSpin(id){
+    let spins=leesKluis(); if(vindSpin(spins,id)<0) return;
+    if(!await vraagJaNee('Deze hele spin weggooien?')) return;
+    spins=leesKluis(); const k=vindSpin(spins,id); if(k<0) return;
     spins.splice(k,1);
     schrijfKluis(spins); tekenKluis(); toast('Spin verwijderd');
   }
