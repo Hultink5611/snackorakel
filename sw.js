@@ -1,7 +1,7 @@
 /* Service worker — Het Snackorakel.
    Pagina: network-first (updates komen meteen door, offline valt terug op cache).
    Assets: cache-first met achtergrond-update. */
-const CACHE = 'snackorakel-v10';
+const CACHE = 'snackorakel-v11';
 const ASSETS = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg'];
 
 self.addEventListener('install', e => {
