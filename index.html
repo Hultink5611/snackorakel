@@ -20,19 +20,6 @@
     --creme:#FFF4E0; --bruin:#2E1A10; --wit:#FFFDF7; --groen:#3B8C4E;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  /* ---- GEK-modus: het hele orakel wordt circus ---- */
-  body.gek{
-    --rood:#7A28C4; --rood-diep:#4A1580; --geel:#FFD23F; --geel-warm:#FF477E;
-    --creme:#FFF1F7; --bruin:#2B1440; --wit:#FFFBFE; --groen:#22A45D;
-    background-image:repeating-linear-gradient(45deg,
-      rgba(255,255,255,.10) 0 18px, transparent 18px 36px),
-      repeating-linear-gradient(-45deg, var(--rood-diep) 0 2px, transparent 2px 26px);
-  }
-  body.gek .sign{background:var(--bruin); border-color:var(--geel)}
-  body.gek .sign h1{text-shadow:3px 3px 0 var(--geel-warm)}
-  body.gek .big{background:var(--geel-warm); border-color:var(--geel); box-shadow:0 8px 0 #C42A5E}
-  body.gek .big:active{box-shadow:0 3px 0 #C42A5E}
-
   body{
     font-family:'Inter',sans-serif; color:var(--bruin);
     background:var(--rood);
@@ -276,7 +263,7 @@
     <div class="bulbs" id="bulbs"></div>
     <button class="mute" id="mute" onclick="toggleMute()" title="Geluid aan/uit">🔊</button>
     <div class="wie" id="wie" onclick="vraagNaam(true)" title="Naam wijzigen"></div>
-    <div class="friet" id="friet">🍟</div>
+    <div class="friet">🍟</div>
     <h1>Het<br>Snackorakel</h1>
     <div class="sub">Karst · Dedemsvaart</div>
   </div>
@@ -290,7 +277,7 @@
       <div class="emoji">✨</div><div class="nm">Wonder</div><div class="ds">verrassend lekker</div>
     </div>
     <div class="mode" data-mode="gek" onclick="setMode(this)">
-      <div class="emoji">🤡</div><div class="nm">Gek</div><div class="ds">totaal absurd</div>
+      <div class="emoji">🤪</div><div class="nm">Gek</div><div class="ds">totaal absurd</div>
     </div>
   </div>
 
@@ -570,19 +557,7 @@
   const bulbs=document.getElementById('bulbs');
   for(let i=0;i<7;i++){const b=document.createElement('div');b.className='bulb';bulbs.appendChild(b);}
 
-  function setMode(el){
-    if(spinning)return;
-    document.querySelectorAll('.mode').forEach(m=>m.classList.remove('on'));
-    el.classList.add('on'); mode=el.dataset.mode;
-    pasThemaToe();
-  }
-  // Gek zet het hele orakel in circuskleuren; Wonder haalt ze er weer af.
-  function pasThemaToe(){
-    const gek = mode==='gek';
-    document.body.classList.toggle('gek', gek);
-    document.getElementById('friet').textContent = gek ? '🤡' : '🍟';
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', gek ? '#7A28C4' : '#D62828');
-  }
+  function setMode(el){if(spinning)return;document.querySelectorAll('.mode').forEach(m=>m.classList.remove('on'));el.classList.add('on');mode=el.dataset.mode;}
 
   function segPick(container, cb){
     document.querySelectorAll('#'+container+' button').forEach(b=>b.onclick=()=>{
@@ -804,7 +779,6 @@
     const inp=document.getElementById('naam-input');
     inp.addEventListener('input', ()=>{ document.getElementById('naam-ok').disabled = inp.value.trim().length<2; });
     inp.addEventListener('keydown', e=>{ if(e.key==='Enter' && inp.value.trim().length>=2) bewaarNaam(); });
-    pasThemaToe();
     toonWie();
     kluisKnopBij();
     if(!naam) vraagNaam(false);
@@ -1004,15 +978,8 @@
     g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.start(t); o.stop(t+dur+0.02);
   }
   function tick(){ blip(1100+Math.random()*500,0.045,'square',0.05); }
-  // Wonder klinkt als een speelhal, Gek als een circus.
-  function ding(){
-    if(mode==='gek'){ blip(430,0.10,'sawtooth',0.15); setTimeout(()=>blip(300,0.17,'sawtooth',0.15),85); return; }
-    blip(880,0.12,'triangle',0.18); setTimeout(()=>blip(1320,0.22,'triangle',0.18),70);
-  }
-  function jackpot(){
-    if(mode==='gek'){ [520,700,900,1150,1450,1150,1450].forEach((f,i)=>setTimeout(()=>blip(f,0.13,'sawtooth',0.11),i*85)); return; }
-    [660,880,1100,1320,1660].forEach((f,i)=>setTimeout(()=>blip(f,0.18,'square',0.12),i*70));
-  }
+  function ding(){ blip(880,0.12,'triangle',0.18); setTimeout(()=>blip(1320,0.22,'triangle',0.18),70); }
+  function jackpot(){ [660,880,1100,1320,1660].forEach((f,i)=>setTimeout(()=>blip(f,0.18,'square',0.12),i*70)); }
   function toggleMute(){ muted=!muted; document.getElementById('mute').textContent=muted?'🔇':'🔊'; if(!muted)ac(); }
 
   /* =========================== GENERATIE =================================== */
