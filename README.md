@@ -13,8 +13,9 @@ uit — als kassabon, met een mini-verhaaltje.
 - **Sauzen aan/uit** — klik weg wat je nooit wilt; samengestelde sauzen vallen automatisch mee af
   (satésaus uit ⇒ ook oorlog eruit).
 - Slot-machine met geluid (mute-knop), 1–3 snacks, vega-filter, kipfilter, patat, milkshake en een budget-plafond.
-- **De Frituurkluis** — bewaar een spin, geef losse snacks een duim, gooi spins of snacks weg
-  en kopieer een oude bestelling. Per naam een eigen plank, dus een gedeelde telefoon kan.
+- **De Frituurkluis** — bewaar een spin, geef elke snack 1 tot 5 frietjes, gooi spins of
+  snacks weg en kopieer een oude bestelling. De ranglijst telt snack én saus als één
+  combinatie. Per naam een eigen plank, dus een gedeelde telefoon kan.
 - **Wie draait er** — naam bij het eerste bezoek; elke draai gaat naar een Cloudflare
   Worker + D1 (`worker/`). Meekijken met `?stats` achter de URL.
 - Kassabon kopiëren (alleen de snacks).
