@@ -222,10 +222,14 @@
   .kluisregel{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dashed #d9c3a3; font-size:13.5px}
   .kluisregel .nm{flex:1; line-height:1.3}
   .kluisregel .sau{display:block; font-size:11px; color:#8a7560}
-  .duim, .weg{flex:none; width:32px; height:32px; border-radius:9px; border:2px solid var(--bruin); background:var(--wit);
-    cursor:pointer; font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center}
-  .duim.aan{background:var(--groen); border-color:#2c6b3b}
-  .weg{border-color:#c2ab8c; color:#a08b72; font-size:15px}
+  .weg{flex:none; width:32px; height:32px; border-radius:9px; border:2px solid #c2ab8c; background:var(--wit);
+    cursor:pointer; font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; color:#a08b72}
+  .rating{display:flex; gap:2px; margin-top:5px}
+  .rating button{width:27px; height:27px; padding:0; border:none; background:none; cursor:pointer; font-size:16px; line-height:1;
+    filter:grayscale(1) opacity(.35); transition:filter .1s, transform .1s}
+  .rating button.aan{filter:none}
+  .rating button:active{transform:scale(1.25)}
+  .score{font-size:11px; font-weight:800; color:#8a7560; margin-left:5px; align-self:center}
   .kluistot{display:flex; justify-content:space-between; font-family:'Anton',sans-serif; font-size:17px;
     text-transform:uppercase; margin-top:8px}
   .fav{background:var(--bruin); border:4px solid var(--geel); border-radius:14px; padding:14px; margin-bottom:14px}
@@ -784,8 +788,9 @@
 
   /* ============================ BIBLIOTHEEK ================================
      Elke draaier bewaart z'n eigen spins. De frituurkluis hangt aan de naam, dus op een
-     gedeelde telefoon heeft iedereen z'n eigen plank. Per snack kun je een duim
-     geven; die duimen samen vormen de favorietenlijst bovenaan. Spins en losse
+     gedeelde telefoon heeft iedereen z'n eigen plank. Per snack geef je 1 tot 5
+     frietjes; die cijfers vormen de ranglijst bovenaan, met snack én saus samen,
+     want dat is de combinatie waar het om gaat. Spins en losse
      snacks zijn te verwijderen, en de bestelling is per spin te kopiëren.
      Alles staat op het toestel — wis je de browsergegevens, dan is de kluis weg. */
   const KLUIS_KEY='snackorakel_kluis_v1';
@@ -794,7 +799,11 @@
     try{ localStorage.setItem(KLUIS_KEY, localStorage.getItem(KLUIS_OUD)); localStorage.removeItem(KLUIS_OUD); }catch(e){}
   }
   const kluisSleutel = () => (naam||'Anoniem');
-  const leesKluis  = () => (lees(KLUIS_KEY,{})[kluisSleutel()] || []);
+  const leesKluis  = () => (lees(KLUIS_KEY,{})[kluisSleutel()] || []).map(sp => ({
+    ...sp,
+    // een duim van vroeger telt als vier frietjes
+    regels: sp.regels.map(r => 'score' in r ? r : {...r, score: r.duim ? 4 : 0})
+  }));
   function schrijfKluis(spins){
     const alles=lees(KLUIS_KEY,{});
     alles[kluisSleutel()]=spins.slice(0,200);
@@ -816,7 +825,7 @@
       id: 's'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
       ts: new Date().toISOString(),
       modus: laatsteOrder.modus,
-      regels: laatsteOrder.lines.map(l=>({naam:l.naam, prijs:l.prijs, saus:l.saus, vega:l.vega, duim:false})),
+      regels: laatsteOrder.lines.map(l=>({naam:l.naam, prijs:l.prijs, saus:l.saus, vega:l.vega, score:0})),
       patat: laatsteOrder.patat, shake: laatsteOrder.shake,
       tot: laatsteOrder.tot
     };
@@ -839,10 +848,19 @@
   }
   const veilig = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+  // De combinatie is het punt, dus de saus hoort bij de naam.
+  const combiNaam = r => r.saus ? `${r.naam} met ${r.saus}` : r.naam;
   function favorieten(spins){
     const tel={};
-    spins.forEach(sp=>sp.regels.forEach(r=>{ if(r.duim) tel[r.naam]=(tel[r.naam]||0)+1; }));
-    return Object.entries(tel).sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0]));
+    spins.forEach(sp=>sp.regels.forEach(r=>{
+      if(!r.score) return;
+      const k=combiNaam(r);
+      tel[k] ??= {som:0, n:0};
+      tel[k].som+=r.score; tel[k].n++;
+    }));
+    return Object.entries(tel)
+      .map(([k,v])=>({naam:k, gem:v.som/v.n, n:v.n}))
+      .sort((a,b)=>b.gem-a.gem || b.n-a.n || a.naam.localeCompare(b.naam));
   }
   function tekenKluis(){
     const box=document.getElementById('kluis-inhoud');
@@ -853,17 +871,22 @@
     }
     const fav=favorieten(spins);
     const wanneer=iso=>{ const d=new Date(iso); return isNaN(d)?'—':d.toLocaleString('nl-NL',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}); };
+    const cijfer = g => (Math.round(g*10)/10).toString().replace('.',',');
     const favBlok = fav.length
-      ? `<div class="fav"><h3>👍 Lekker gevonden</h3>`+
-        fav.map(([n,c])=>`<div class="favrij"><span>${veilig(n)}</span><span>${c}×</span></div>`).join('')+
+      ? `<div class="fav"><h3>🍟 Jouw ranglijst</h3>`+
+        fav.map(f=>`<div class="favrij"><span>${veilig(f.naam)}</span><span>${'🍟'.repeat(Math.round(f.gem))} ${cijfer(f.gem)}${f.n>1?` · ${f.n}×`:''}</span></div>`).join('')+
         `</div>`
-      : `<div class="fav"><h3>👍 Lekker gevonden</h3><div class="favrij"><span>Nog niets. Geef een snack een duim in een spin hieronder.</span><span></span></div></div>`;
+      : `<div class="fav"><h3>🍟 Jouw ranglijst</h3><div class="favrij"><span>Nog niets beoordeeld. Geef een snack hieronder 1 tot 5 frietjes.</span><span></span></div></div>`;
 
     box.innerHTML = favBlok + spins.map(sp=>{
       const regels = sp.regels.map((r,i)=>
         `<div class="kluisregel">
-           <span class="nm">${veilig(r.naam)}${r.saus?`<span class="sau">met ${veilig(r.saus)}</span>`:''}</span>
-           <button class="duim${r.duim?' aan':''}" onclick="duimOm('${sp.id}',${i})" title="${r.duim?'Duim weghalen':'Lekker!'}">👍</button>
+           <span class="nm">${veilig(r.naam)}${r.saus?`<span class="sau">met ${veilig(r.saus)}</span>`:''}
+             <span class="rating">
+               ${[1,2,3,4,5].map(n=>`<button class="${r.score>=n?'aan':''}" onclick="zetScore('${sp.id}',${i},${n})" title="${n} van 5">🍟</button>`).join('')}
+               ${r.score?`<span class="score">${r.score}/5</span>`:''}
+             </span>
+           </span>
            <button class="weg" onclick="wisRegel('${sp.id}',${i})" title="Snack verwijderen">✕</button>
          </div>`).join('');
       const extra = [
@@ -901,10 +924,10 @@
 
   /* ===== bewerken ===== */
   const vindSpin = (spins,id) => spins.findIndex(s=>s.id===id);
-  function duimOm(id, i){
+  function zetScore(id, i, n){
     const spins=leesKluis(), k=vindSpin(spins,id); if(k<0) return;
     const r=spins[k].regels[i]; if(!r) return;
-    r.duim=!r.duim;
+    r.score = (r.score===n) ? 0 : n;      // hetzelfde frietje nog eens = beoordeling eraf
     schrijfKluis(spins); tekenKluis();
   }
   async function wisRegel(id, i){
