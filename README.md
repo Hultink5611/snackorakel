@@ -9,7 +9,8 @@ uit — als kassabon, met een mini-verhaaltje.
 ## Wat het doet
 - **Wonder** ✨ — combinaties die écht matchen: elke draai bouwt honderden kandidaten,
   scoort ze op smaakprofiel en kiest gewogen uit de topband.
-- **Gek** 🤪 — dezelfde motor, maar omgedraaid: maximale verrassing, minimale harmonie.
+- **Gek** 🤪 — dezelfde motor, maar omgedraaid: maximale verrassing, minimale harmonie,
+  met sauzen die nergens op slaan maar die je online bij Karst wél gewoon kunt aanklikken.
 - **Sauzen aan/uit** — klik weg wat je nooit wilt; samengestelde sauzen vallen automatisch mee af
   (satésaus uit ⇒ ook oorlog eruit).
 - Slot-machine met geluid (mute-knop), 1–3 snacks, vega-filter, kipfilter, patat, milkshake en een budget-plafond.
@@ -40,6 +41,13 @@ gescoord op:
   op wat je net had.
 
 Wonder telt beide op, Gek trekt harmonie er juist vanaf. Uit de top 12% wordt gewogen gekozen.
+
+**Gek, maar bestelbaar.** Gek kiest per snack een saus die er juist níet bij hoort (appelmoes op
+een vlampijp, mosterd op een loempia), maar alleen uit wat Karst in Jamezz bij die snack
+aanbiedt: geen losse saus op salades, kip saté of al gesausde frikandellen, en geen extra ui op
+de berenhap. Eén saus per snack; alleen bij drie snacks mag er één dubbele tussen zitten. Er
+zijn ook 15 Gek-recepten (*Mosterd op alles*, *Het saladedieet*, *Blussen met appelmoes*) met
+eigen absurde verhaaltjes, en de losse verhaaltjes maken grapjes over de saus die erop zit.
 
 **Verhaaltjes** noemen de snacks bij naam ("zes bitterballen"), zetten een saus alleen bij de
 snack waar hij echt op zit, en gebruiken weetjes uit productinformatie: dat een smulrol een
