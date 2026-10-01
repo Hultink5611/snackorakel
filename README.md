@@ -21,8 +21,9 @@ uit — als kassabon, met een mini-verhaaltje.
   Worker + D1 (`worker/`). Meekijken met `?stats` achter de URL.
 - Kassabon kopiëren (alleen de snacks).
 - **Snack van de maand** — de tijdelijke aanbieding van Karst (nu de garnalenkroket voor €1,60)
-  staat bovenin, en komt in Wonder én Gek zo nu en dan gegarandeerd op de bon, met een sterretje
-  en een zinnetje in het verhaal. De Worker leest hem live uit de categorie 'Aanbieding' in
+  staat bovenin, en komt in Wonder én Gek op de bon, met een sterretje en een zinnetje in het
+  verhaal. Onder *Meer opties* kies je *Soms* (ongeveer 3 op de 10 draaien), *Altijd* of *Uit*
+  (bijvoorbeeld bij een allergie); een tik op de balk zet hem op *Altijd* en weer terug. De Worker leest hem live uit de categorie 'Aanbieding' in
   Jamezz (`/aanbieding`); lukt dat niet, dan geldt de laatst bekende.
 
 ## Hoe de combinatie tot stand komt
@@ -59,7 +60,9 @@ opgerold pannenkoekje is, dat de krokidel bedacht werd op de Frikandel Disco, da
 boerenbrok in schouderkarbonade is gewikkeld.
 
 **Prijzen** zijn die van Karst, inclusief de prijs per saus. Elke kandidaat kiest z'n sauzen
-vooraf, dus de bon klopt op de cent en het budget is een hard plafond.
+vooraf, dus de bon klopt op de cent en het budget is een hard plafond. Vindt de motor binnen het budget
+niets, dan bouwt hij zelf de goedkoopste geldige combinatie: precies het bedrag waarmee de
+budgetwaarschuwing rekent.
 
 ## Techniek
 Eén `index.html` — vanilla HTML/CSS/JS, geen build-step, geen backend, geen API.
