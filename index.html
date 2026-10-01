@@ -505,13 +505,6 @@
   const PATAT_SAUS = {mayo:0.55, curry:0.55, joppie:0.55, ketchup:0.55,
                       speciaal:0.95, sate:0.95, 'sate-scherp':0.95, 'oorlog-zoet':0.95, 'oorlog-scherp':0.95};
 
-  // GEK = echte sauzen, raar gecombineerd (mag absurd zijn) — als id-combi's.
-  const SAUS_GEK=[
-    ['oorlog-scherp'], ['sate-scherp','knoflook'], ['zigeuner','appelmoes'],
-    ['chili','joppie'], ['mayo','ui','curry'], ['zoetzuur','knoflook'],
-    ['knoflook','appelmoes'], ['ketchup','zigeuner'], ['oorlog-zoet','ui'],
-    ['speciaal','chili']
-  ];
   const SHAKE_SMAKEN=["aardbei","banaan","chocola","vanille","kiwi"];
 
   /* ===== emoji per snack (voor de slot-rollen) ===== */
@@ -1042,17 +1035,48 @@
     const rest=SAUZEN.filter(s=>sausMag(s.id) && s.id!=='ui');
     return rest.length ? one(rest).id : null;
   }
+  /* GEK = per snack de sauzen die er écht niet bij horen, maar die je bij Karst
+     online gewoon kunt aanklikken (Jamezz, 'sauzen snacks'). Snacks zonder
+     sauskeuze (salades, kip saté, al gesausde frikandellen) blijven kaal. */
+  const GEK_FOUT=[
+    {m:/kaas|tengel|souffl/,                 fout:['appelmoes','mosterd','sate-scherp','zoetzuur','bbq']},
+    {m:/loempia|loempidel/,                  fout:['mosterd','appelmoes','joppie','speciaal']},
+    {m:/bami|nasi/,                          fout:['mosterd','appelmoes','ketchup','bbq']},
+    {m:/vlam|mexicano|pikanto|hete donder/,  fout:['appelmoes','zoetzuur','mayo','mosterd']},
+    // kip met appelmoes is juist heel gewoon, dus die laten we hier weg
+    {m:/kip|nugget|wing/,                    fout:['mosterd','knoflook','oorlog-scherp','zigeuner']},
+    {m:/kroket|krokidel|bitterbal/,          fout:['zoetzuur','appelmoes','bbq','sate-scherp']},
+    // frikandel met appelmoes is een gewoon kindermenu, dus die telt hier niet
+    {m:/frikandel/,                          fout:['zoetzuur','bbq','sate-scherp','mosterd']},
+    {m:/gehaktbal|berenhap|braadworst|boerenbrok|schnitzel|hamburger|trio|smulrol|shoarmarol|sitostick/,
+                                             fout:['appelmoes','zoetzuur','sate-scherp','bbq']}
+  ];
+  const GEK_DEFAULT=['appelmoes','mosterd','zoetzuur'];
+  const GEK_TE_GEWOON=['mayo','ketchup','curry','ui'];
+  // kip of frikandel met appelmoes eet half Nederland al, dat is niet gek genoeg
+  const gekGewoon = naam => /kip|nugget|wing|frikandel/.test(naam.toLowerCase()) ? ['appelmoes'] : [];
+  const gekFout = naam => (GEK_FOUT.find(e=>e.m.test(naam.toLowerCase()))||{fout:GEK_DEFAULT}).fout;
+  // Wat Jamezz per snack niet aanbiedt: de berenhap heeft geen 'extra ui' (die heeft z'n uienringen al).
+  const magOp = (naam, id) => !(id==='ui' && /berenhap/i.test(naam));
+  const gekMag = naam => id => sausMag(id) && magOp(naam, id);
+  // Wild: alles wat de snack in Wonder nooit zou krijgen, en ook niet saai is.
+  function gekWild(naam){
+    const set=wonderSet(naam), normaal=[...set.goed, ...(set.wauw||[]), ...GEK_TE_GEWOON, ...gekGewoon(naam)];
+    return SAUZEN.map(s=>s.id).filter(id=>!normaal.includes(id)).filter(gekMag(naam));
+  }
   // In Gek blijft het bij één saus per snack; alleen bij drie snacks mag er
   // precies één dubbele tussen zitten, anders is het geen bestelling meer.
-  const gekCombis = () => SAUS_GEK.filter(c => c.length > 1 && comboMag(c));
-  function gekSaus(magCombi){
+  function gekSaus(naam, magCombi){
+    const fout=gekFout(naam).filter(gekMag(naam)), wild=gekWild(naam);
     if(magCombi){
-      const c=gekCombis();
-      if(c.length) return one(c);
+      // twee sauzen die elkaar én de snack tegenspreken: één foute, plus nog een foute of wilde
+      const a = fout.length ? one(fout) : (wild.length ? one(wild) : null);
+      const rest=[...fout, ...wild].filter((id,k,arr)=>id!==a && arr.indexOf(id)===k);
+      if(a && rest.length) return [a, one(rest)];
     }
-    const enkel=SAUZEN.filter(s=>sausMag(s.id) && s.id!=='ui');   // 'extra ui' alleen als toevoeging
-    if(enkel.length) return [one(enkel).id];
-    const rest=SAUZEN.filter(s=>sausMag(s.id));
+    if(fout.length && (Math.random()<0.7 || !wild.length)) return [one(fout)];
+    if(wild.length) return [one(wild)];
+    const rest=SAUZEN.filter(s=>gekMag(naam)(s.id) && s.id!=='ui');   // 'extra ui' alleen als toevoeging
     return rest.length ? [one(rest).id] : null;
   }
   // ids -> wat er op de bon komt: één label en de opgetelde prijs
@@ -1068,7 +1092,7 @@
   }
   function kiesSaus(naam, magCombi){
     if(!krijgtSaus(naam)) return null;
-    if(mode==='gek') return alsSaus(gekSaus(magCombi));
+    if(mode==='gek') return alsSaus(gekSaus(naam, magCombi));
     const id=wonderSaus(naam);
     return id ? alsSaus([id]) : null;
   }
@@ -1420,17 +1444,42 @@
     // Gek
     // 'de rest' = alle snacks behalve die waar het weetje over gaat
     const rest = mv && wj ? lijstVan(chosen.filter((_,i)=>i!==wj.i)) : null;
+    const grap = Math.random()<0.55 ? gekGrap(lines) : '';
     return one([
-      ()=>`Niemand vroeg om ${lijstMet}. En tóch fluistert het orakel: probeer het één keer.`,
-      ()=>`${hoofd(lijstMet)}. Wetenschappelijk twijfelachtig, frituurtechnisch legendarisch.`,
-      ()=>`Het orakel was stellig, en mogelijk licht beneveld: ${lijst} ${mv?'horen':'hoort'} nergens, dus juist daarom moet het.`,
-      ()=>`Dit is de bestelling waar de frituurbak nog jaren over napraat: ${lijstMet}.${shz}`,
+      ()=>`Niemand vroeg om ${lijstMet}. En tóch fluistert het orakel: probeer het één keer.${grap}`,
+      ()=>`${hoofd(lijstMet)}. Wetenschappelijk twijfelachtig, frituurtechnisch legendarisch.${grap}`,
+      ()=>`Het orakel was stellig, en mogelijk licht beneveld: ${lijst} ${mv?'horen':'hoort'} nergens, dus juist daarom moet het.${grap}`,
+      ()=>`Dit is de bestelling waar de frituurbak nog jaren over napraat: ${lijstMet}.${grap||shz}`,
       ()=>`${hoofd(lijstMet)}. Bestel het hardop en kijk naar het gezicht achter de toonbank.`,
-      ()=>`Ergens in een parallel universum ${mv?'zijn':'is'} ${lijstMet} heel normaal. Vanavond ook hier.`,
-      ()=> (weetje && rest) ? `${weetje} Het orakel vond dat een goede reden om er ${rest} naast te leggen.`
-                            : `Het orakel heeft geen idee waarom, maar ${lijst} ${mv?'moeten vanavond samen in één zak':'moet vanavond mee naar huis'}.`,
-      ()=>`Het orakel heeft geen idee waarom, maar ${lijst} ${mv?'moeten vanavond samen in één zak':'moet vanavond mee naar huis'}.${shz}`
+      ()=>`Ergens in een parallel universum ${mv?'zijn':'is'} ${lijstMet} heel normaal. Vanavond ook hier.${grap}`,
+      ()=> (weetje && rest) ? `${weetje} Het orakel vond dat een goede reden om er ${rest} naast te leggen.${grap}`
+                            : `Het orakel heeft geen idee waarom, maar ${lijst} ${mv?'moeten vanavond samen in één zak':'moet vanavond mee naar huis'}.${grap}`,
+      ()=>`Het orakel heeft geen idee waarom, maar ${lijst} ${mv?'moeten vanavond samen in één zak':'moet vanavond mee naar huis'}.${shz}`,
+      ()=>`De frituurbak protesteerde, het orakel niet: ${lijstMet}.${grap}`,
+      ()=>`${hoofd(lijstMet)}. Laat deze bon niet aan je moeder zien.${grap}`,
+      ()=>`Als iemand vraagt waarom ${lijstMet}: het was niet jouw idee. Het was het orakel.`,
+      ()=>`Dit is geen bestelling, dit is een experiment. Proefpersoon: jij. Onderwerp: ${lijstMet}.${grap}`,
+      ()=>`Het orakel draaide, trok de hendel er bijna af en liet het toen maar zo: ${lijstMet}.${grap}`,
+      ()=>`Er bestaan regels voor wat bij elkaar hoort. Het orakel heeft ze gelezen en is toen ${lijstMet} gaan bestellen.`
     ])();
+  }
+  // Grapjes over de rare saus die op de bon staat (feiten kloppen: mosterd is echt gratis bij Karst)
+  const GEK_SAUS_GRAP={
+    'mosterd':['Mosterd is gratis bij Karst, en dat weet het orakel.','Mosterd hoort bij een bitterbal. Het orakel smeert het overal anders op.'],
+    'appelmoes':['Appelmoes telt als fruit. Het orakel houdt van gezond.','Appelmoes: voor als je diep vanbinnen nog acht bent.'],
+    'zoetzuursaus':['Zoetzuursaus, omdat het orakel iets Aziatisch wilde, alleen op de verkeerde plek.'],
+    'BBQ-saus':['BBQ-saus, want het orakel stak liever de barbecue aan dan de frituur.'],
+    'knoflooksaus':['Knoflooksaus. Neem pepermunt mee.','Knoflooksaus: morgen ruikt je hele huis ernaar.'],
+    'satésaus scherp':['Scherpe satésaus, want de zoete was te makkelijk.'],
+    'oorlog scherp':['Oorlog scherp. De naam zei het al.'],
+    'zigeunersaus':['Zigeunersaus, omdat paprika ook groente is.'],
+    'joppiesaus':['Joppiesaus op de verkeerde snack. Het orakel noemt het lef.'],
+    'speciaalsaus':['Speciaal, maar dan op een plek waar niemand het verwacht.']
+  };
+  function gekGrap(lines){
+    const ids=[];
+    (lines||[]).forEach(l=>{ if(l.saus) l.saus.split(' + ').forEach(lb=>{ if(GEK_SAUS_GRAP[lb] && !ids.includes(lb)) ids.push(lb); }); });
+    return ids.length ? ' '+one(GEK_SAUS_GRAP[one(ids)]) : '';
   }
 
   /* ============================ ORAKELRECEPTEN =============================
@@ -1569,16 +1618,108 @@
       'Kaas en loempia: het klinkt als een vergissing, maar zoet naast zout-romig werkt altijd.',
       'Vega, en toch helemaal frituur. Het orakel heeft geen vlees nodig om indruk te maken.']}
   ];
-  const RECEPT_KANS=0.5;   // bij 2 of 3 snacks in Wonder: ongeveer de helft van de keren een recept
+  const RECEPT_KANS=0.5;   // bij 2 of 3 snacks: ongeveer de helft van de keren een recept
+
+  /* GEK-RECEPTEN: met opzet fout, maar alles is echt te bestellen bij Karst.
+     Een saus kan ook een lijstje zijn (de ene dubbele saus die Gek mag, alleen bij drie snacks). */
+  const GEK_RECEPTEN=[
+    {id:'g-kaas', naam:'Kaas, kaas, kaas',
+     snacks:[['Kaassoufflé','appelmoes'],['Kaaskroket','mosterd'],['Kaastengels (6)','zoetzuur']],
+     verhalen:[
+      'Drie keer kaas in drie verschillende jasjes. Het orakel wilde weten of kaas ooit genoeg is. Het antwoord is nee.',
+      '§Appelmoes op de soufflé, mosterd op de kroket, zoetzuur op de tengels. Elke kaas krijgt een saus waar hij nooit om heeft gevraagd.',
+      'Een Hollandse kaasmarkt, maar dan gefrituurd en in een papieren zak. Het orakel noemt het cultuur.']},
+    {id:'g-dieet', naam:'Het saladedieet',
+     snacks:[['Slaatje',null],['Kip nuggets (20)','oorlog-scherp'],['Boerenschnitzel','bbq']],
+     verhalen:[
+      'Het orakel heeft gehoord dat je op dieet bent. Daarom zit er een slaatje bij. Naast twintig nuggets en een boerenschnitzel.',
+      '§Twintig nuggets met oorlog scherp, een boerenschnitzel met BBQ-saus en een slaatje voor het geweten. Balans, volgens het orakel.',
+      'Eén slaatje maakt alles goed. Dat staat nergens, maar het orakel gelooft het heilig.']},
+    {id:'g-blussen', naam:'Blussen met appelmoes',
+     snacks:[['Vlampijp','appelmoes'],['Hete donder',['appelmoes','mosterd']],['Slaatje',null]],
+     verhalen:[
+      'Twee van de pittigste snacks van de kaart, en het orakel blust met appelmoes. Het slaatje is voor als dat niet werkt.',
+      '§Appelmoes op de vlampijp, appelmoes én mosterd op de hete donder. De brandweer doet het anders, maar het orakel heeft geen brandweer.',
+      'Vuur, nog meer vuur, en een slaatje. Het orakel noemt dit een evenwichtige maaltijd.']},
+    {id:'g-mosterd', naam:'Mosterd op alles',
+     snacks:[['Loempia','mosterd'],['Kipcorn','mosterd'],['Kaassoufflé','mosterd']],
+     verhalen:[
+      '§Mosterd op de loempia, mosterd op de kipcorn, mosterd op de kaassoufflé. Mosterd is gratis bij Karst, en dat weet het orakel.',
+      '§Het orakel kon niet kiezen en heeft daarom overal hetzelfde op gegooid. Consequent is het wel.',
+      'Een loempia, een kipcorn en een kaassoufflé. Drie werelddelen in één zak, en het orakel wil er geen vragen over.']},
+    {id:'g-vleesberg', naam:'Geen groente te zien',
+     snacks:[['Boerenschnitzel','oorlog-scherp'],['Halve kip','zigeuner'],['Boerenbrok','appelmoes']],
+     verhalen:[
+      'Een schnitzel, een halve kip en een boerenbrok. Er zit soepgroente in die boerenbrok, dus het orakel rekent dit als gezond.',
+      '§Oorlog op de schnitzel, zigeunersaus op de kip en appelmoes op de boerenbrok. Het orakel heeft geen plan, alleen honger.',
+      'Deze bon weegt meer dan het orakel zelf. Neem een grote zak mee.']},
+    {id:'g-appelmoes', naam:'Appelmoesfeest',
+     snacks:[['Bitterballen (6)','appelmoes'],['Kalfskroket','appelmoes'],['Mexicano','appelmoes']],
+     verhalen:[
+      '§Appelmoes op de bitterballen, op de kroket en op de mexicano. Het orakel had vanavond maar één saus in huis, en het is de verkeerde.',
+      'Een borrel, een broodje kroket en een mexicano. Het orakel heeft drie verschillende feestjes in één zak gestopt.',
+      '§Overal appelmoes op. Zo eet je frituur als een kind van vier, en het orakel vindt dat precies goed.']},
+    {id:'g-rijsttafel', naam:'Rijsttafel van de verkeerde kant',
+     snacks:[['Bamischijf','mosterd'],['Kip saté (3 stokjes)',null],['Loempia','appelmoes']],
+     verhalen:[
+      'Bami, saté en een loempia. Een rijsttafel, maar dan een die het orakel in het donker heeft samengesteld.',
+      '§Mosterd op de bamischijf en appelmoes op de loempia. Alleen de saté heeft gewoon zijn eigen saus, en die kijkt verbaasd naar de rest.',
+      'Het orakel is ooit op vakantie geweest en heeft er alles verkeerd van onthouden.']},
+    {id:'g-knoflook', naam:'Knoflookalarm',
+     snacks:[['Kaassoufflé','knoflook'],['Frikandel','knoflook'],['Kipcorn','knoflook']],
+     verhalen:[
+      '§Knoflooksaus op de kaassoufflé, de frikandel én de kipcorn. Morgen weet het hele kantoor wat je gegeten hebt.',
+      '§Drie keer knoflook. Vampiers blijven vanavond weg, en de rest van de mensen waarschijnlijk ook.',
+      'Een kaassoufflé, een frikandel en een kipcorn. Het orakel noemt ze de drie musketiers. Niemand weet wie Aramis is.']},
+    {id:'g-vega', naam:'De vegaverwarring',
+     snacks:[['Vega frikandel','zoetzuur'],['Groentekroket','appelmoes'],["Mini loempia's (6)",'mosterd']],
+     verhalen:[
+      "Een frikandel zonder vlees, een kroket vol groente en zes mini-loempia's. Het orakel heeft geen dier nodig om je in verwarring te brengen.",
+      "§Zoetzuur op de vegafrikandel, appelmoes op de groentekroket en mosterd op de loempiaatjes. Alles klopt, behalve de sauzen.",
+      'Helemaal vega, en toch zo fout als het maar kan. Het orakel is er trots op.']},
+    {id:'g-verwisseld', naam:'Verwisselde sauzen',
+     snacks:[['Loempia','mosterd'],['Bitterballen (6)','zoetzuur']],
+     verhalen:[
+      '§De bitterballen kregen de zoetzuursaus van de loempia, de loempia kreeg de mosterd van de bitterballen. Iemand heeft het verwisseld, en het orakel laat het zo.',
+      'Een loempia en zes bitterballen. Oost en west in één zak, en ze praten niet met elkaar.']},
+    {id:'g-nuggets', naam:'Twintig nuggets en een slaatje',
+     snacks:[['Kip nuggets (20)','mosterd'],['Slaatje',null]],
+     verhalen:[
+      'Twintig nuggets en één slaatje. Het orakel noemt dat een gezonde verhouding.',
+      '§Twintig nuggets met mosterd en een slaatje ernaast. Het orakel heeft het dieet uitgesteld tot morgen, en morgen ook.']},
+    {id:'g-kampioen', naam:'Ontbijt van kampioenen',
+     snacks:[['Halve kip','mosterd'],['Boerenschnitzel','appelmoes']],
+     verhalen:[
+      'Een halve kip en een boerenschnitzel. Het orakel vraagt niet of je honger hebt, het gaat ervan uit.',
+      '§Mosterd op de halve kip, appelmoes op de schnitzel. Het orakel heeft twee kookboeken door elkaar gelezen.']},
+    {id:'g-vuur', naam:'Vuur met fruit',
+     snacks:[['Vlammetjes (6)','appelmoes'],['Pikanto','zoetzuur']],
+     verhalen:[
+      '§Appelmoes op de vlammetjes, zoetzuur op de pikanto. Het orakel probeert een brand te blussen met fruit.',
+      'Zes vlammetjes en een pikanto. Twee keer pit en niks om te blussen. Het orakel kent geen medelijden.']},
+    {id:'g-bbq', naam:'Barbecue in de frituur',
+     snacks:[['Kaastengels (6)','bbq'],['Wings (5)','oorlog-scherp']],
+     verhalen:[
+      '§BBQ-saus op de kaastengels en oorlog op de wings. Het orakel heeft de barbecue aangestoken in de frituurbak.',
+      'Zes kaastengels en vijf wings. Het orakel heeft ze geteld en vindt het eerlijk verdeeld.']},
+    {id:'g-blind', naam:'Blind uit de kast',
+     snacks:[['Kaassoufflé','appelmoes'],['Vegetarische bami','mosterd']],
+     verhalen:[
+      '§Appelmoes op de kaassoufflé, mosterd op de bami. Het orakel heeft de sauzen blind uit de kast gepakt.',
+      'Een kaassoufflé en een vegabami. Geen vlees, geen logica, wel een bon.']}
+  ];
 
   /* Een recept voorstellen dat past bij de instellingen, het budget en wat er
      net al geweest is. Geen passend recept = null, dan kiest de gewone motor. */
+  // saus uit een recept: één id, een lijstje (dubbele saus), of null
+  const receptIds = id => id==null ? [] : (Array.isArray(id) ? id : [id]);
   function receptVoorstel(ctx, limiet){
-    if(mode!=='wonder' || nSnacks<2 || Math.random()>=RECEPT_KANS) return null;
+    if(nSnacks<2 || Math.random()>=RECEPT_KANS) return null;
+    const lijst = mode==='gek' ? GEK_RECEPTEN : RECEPTEN;
     const pool=snackPool(), per=Object.fromEntries(pool.map(s=>[s.n,s]));
     const recent=(HIST.recepten||[]).filter(Boolean);   // recepten uit de laatste 12 draaien
     const opties=[];
-    for(const r of RECEPTEN){
+    for(const r of lijst){
       if(r.snacks.length!==nSnacks) continue;
       if(!r.snacks.every(([n])=>per[n])) continue;                       // vega/kip-filter
       if(kipMode==='altijd' && !r.snacks.some(([n])=>isKip(n))) continue;
@@ -1587,8 +1728,11 @@
       if(HIST.combos.includes(sig(items))) continue;
       const sauzen=r.snacks.map(([n,id])=>{
         if(!krijgtSaus(n)) return null;
-        if(id && sausMag(id)) return alsSaus([id]);
-        const w=wonderSaus(n); return w ? alsSaus([w]) : null;          // uitgezette saus: netjes vervangen
+        const ids=receptIds(id);
+        if(ids.length && ids.every(x=>sausMag(x) && magOp(n,x))) return alsSaus(ids);
+        // uitgezette saus: netjes vervangen, in de stijl van de modus
+        if(mode==='gek') return alsSaus(gekSaus(n, false));
+        const w=wonderSaus(n); return w ? alsSaus([w]) : null;
       });
       const patatSaus = ctx.patat ? kiesPatatSaus() : null;
       let t=items.reduce((a,s,i)=>a+s.p+(sauzen[i]?sauzen[i].prijs:0),0);
@@ -1596,7 +1740,7 @@
       if(ctx.shake) t+=shakePrijs;
       t=+t.toFixed(2);
       if(limiet!=null && t>limiet+0.001) continue;
-      const zoalsBedoeld=r.snacks.every(([,id],i)=> id===null || (sauzen[i] && sauzen[i].label===sausLabel(id)));
+      const zoalsBedoeld=r.snacks.every(([,id],i)=> id===null || (sauzen[i] && sauzen[i].label===alsSaus(receptIds(id)).label));
       opties.push({items, sauzen, patatSaus, kosten:t, redenen:[], recept:r, zoalsBedoeld});
     }
     if(!opties.length) return null;
