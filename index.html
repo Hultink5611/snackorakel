@@ -44,6 +44,12 @@
   .maand{display:none; margin:12px auto 0; max-width:300px; background:var(--geel); color:var(--bruin);
     border-radius:10px; padding:6px 12px 7px; font-size:12px; line-height:1.35; box-shadow:0 3px 0 rgba(0,0,0,.3)}
   .maand.show{display:block}
+  .maand{cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .1s, opacity .2s}
+  .maand:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.3)}
+  .maand.altijd{outline:3px solid var(--wit); outline-offset:2px}
+  .maand.nooit{opacity:.55}
+  .maand.nooit b{text-decoration:line-through}
+  .maand small{display:block; font-size:11px; margin-top:2px; opacity:.8}
   .maand b{display:block; font-family:'Anton',sans-serif; font-weight:400; font-size:17px; text-transform:uppercase; letter-spacing:.5px}
   .bulbs{position:absolute; top:-4px; left:0; right:0; display:flex; justify-content:space-around; padding:0 14px}
   .bulb{width:9px; height:9px; border-radius:50%; background:var(--geel); margin-top:-4px; box-shadow:0 0 6px var(--geel); animation:flick 1.2s infinite}
@@ -273,7 +279,7 @@
     <div class="friet">🍟</div>
     <h1>Het<br>Snackorakel</h1>
     <div class="sub">Karst · Dedemsvaart</div>
-    <div class="maand" id="maand" aria-live="polite"></div>
+    <div class="maand" id="maand" role="button" tabindex="0" aria-live="polite" onclick="tikMaand()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();tikMaand();}"></div>
   </div>
 
   <button class="install-btn" id="installBtn" onclick="doInstall()">📲 Installeer als app</button>
@@ -350,6 +356,10 @@
       <span class="sl">Kipsnacks</span>
       <div class="seg" id="seg-kip">
         <button class="on" data-v="mag">Mag</button><button data-v="altijd">Altijd</button><button data-v="geen">Geen</button>
+      </div>
+      <span class="sl maandrij" style="display:none">Maandsnack</span>
+      <div class="seg maandrij" id="seg-maand" style="display:none">
+        <button class="on" data-v="soms">Soms</button><button data-v="altijd">Altijd</button><button data-v="nooit">Uit</button>
       </div>
       <div class="sausrij" onclick="toggleSauzen()">
         <span class="sl">Sauzen</span>
@@ -542,6 +552,9 @@
   let budgetOn=false, budget=10;
   let vegaMode="alles"; // alles = vlees + vega, geen = geen vega, alleen = alleen vega
   let kipMode="mag";    // mag = willekeurig, altijd = gegarandeerd ≥1 kip, geen = geen kip
+  const MAAND_KEUZE_KEY='snackorakel_maandkeuze_v1';
+  let maandMode="soms"; // soms = af en toe erbij, altijd = elke draai, nooit = komt niet op de bon
+  try{ const v=localStorage.getItem(MAAND_KEUZE_KEY); if(['soms','altijd','nooit'].includes(v)) maandMode=v; }catch(e){}
   const SAUSKEY='snackorakel_sausuit_v1';
   let sausUit=new Set();   // sauzen die de gebruiker nooit wil zien
   try{ const raw=localStorage.getItem(SAUSKEY); if(raw) sausUit=new Set(JSON.parse(raw)); }catch(e){}
@@ -559,6 +572,7 @@
   function snackPool(){
     let p = vegaPool();
     if(kipMode==='geen') p = p.filter(s=>!isKip(s.n));
+    if(maandMode==='nooit') p = p.filter(s=>!s.maand);    // bijv. allergie: dan nooit op de bon
     return p;
   }
 
@@ -576,6 +590,7 @@
   }
   segPick('seg-vega', b=>vegaMode=b.dataset.v);
   segPick('seg-kip', b=>kipMode=b.dataset.v);
+  segPick('seg-maand', b=>zetMaandKeuze(b.dataset.v));
   segPick('seg-snacks', b=>nSnacks=+b.dataset.v);
   segPick('seg-patat', b=>{patatSize=b.dataset.v; patatPrijs=+b.dataset.p;});
   segPick('seg-shake', b=>{shakeSize=b.dataset.v; shakePrijs=+b.dataset.p;});
@@ -638,24 +653,31 @@
   function fixNum(){ setBudget(budget); } // leeg/ongeldig veld herstellen bij verlaten
 
   // Goedkoopst mogelijke totaal voor de huidige keuzes — om vooraf te waarschuwen.
-  function minTotaal(){
-    const cost = s => s.p+(krijgtSaus(s.n)?goedkoopsteSaus():0);
-    const pool = snackPool();
-    // per familie de goedkoopste — de motor kiest nooit twee uit dezelfde familie
-    const perFam={};
-    pool.forEach(s=>{ const f=prof(s).fam; if(!perFam[f] || cost(s)<cost(perFam[f])) perFam[f]=s; });
-    const kosten=Object.values(perFam).map(cost).sort((a,b)=>a-b);
-    const kipPool = pool.filter(s=>isKip(s.n));
-    let sum=0;
-    if(kipMode==='altijd' && kipPool.length){     // goedkoopste kip + rest goedkoopst
-      const kipMin = Math.min(...kipPool.map(cost));
-      sum += kipMin;
-      const rest=[...kosten]; const idx=rest.indexOf(kipMin); if(idx>=0) rest.splice(idx,1);
-      for(let i=0;i<nSnacks-1 && i<rest.length;i++) sum+=rest[i];
-    } else {
-      for(let i=0;i<nSnacks && i<kosten.length;i++) sum+=kosten[i];
+  /* De goedkoopste geldige combinatie: nooit twee uit één familie, met wat er verplicht
+     op moet (snack van de maand bij 'altijd', een kipsnack bij kip 'altijd'). Gulzig per
+     familie is hier ook echt de goedkoopste. Basis voor de budgetwaarschuwing én het
+     vangnet van de motor, zodat die twee het altijd met elkaar eens zijn. */
+  const kostMin = s => s.p+(krijgtSaus(s.n)?goedkoopsteSaus():0);
+  function goedkoopsteItems(pool, vast){
+    const gekozen=[];
+    const vrij = s => !gekozen.includes(s) && !gekozen.some(g=>prof(g).fam===prof(s).fam);
+    const goedkoopst = l => l.reduce((a,b)=>kostMin(b)<kostMin(a)?b:a);
+    if(vast && pool.includes(vast)) gekozen.push(vast);
+    if(kipMode==='altijd' && gekozen.length<nSnacks && !gekozen.some(s=>isKip(s.n))){
+      const kp=pool.filter(s=>isKip(s.n) && vrij(s));
+      if(kp.length) gekozen.push(goedkoopst(kp));
     }
-    if(document.getElementById('t-patat').classList.contains('on')) sum+=patatPrijs+(krijgtPatatSaus()?0.55:0);
+    for(const s of [...pool].sort((a,b)=>kostMin(a)-kostMin(b))){
+      if(gekozen.length>=nSnacks) break;
+      if(vrij(s)) gekozen.push(s);
+    }
+    return gekozen;
+  }
+  const goedkoopstePatatSaus = () => { const p=patatSauzen().map(id=>PATAT_SAUS[id]); return p.length ? Math.min(...p) : 0; };
+  const maandVast = () => (maandMode==='altijd' && MAAND) ? MAAND : null;
+  function minTotaal(){
+    let sum=goedkoopsteItems(snackPool(), maandVast()).reduce((a,s)=>a+kostMin(s),0);
+    if(document.getElementById('t-patat').classList.contains('on')) sum+=patatPrijs+goedkoopstePatatSaus();
     if(document.getElementById('t-shake').classList.contains('on')) sum+=shakePrijs;
     return sum;
   }
@@ -685,8 +707,9 @@
   /* ===== Snack van de maand =====
      Karst zet z'n tijdelijke aanbieding in Jamezz onder 'Aanbieding' (en op de site onder
      /Aanbieding). De Worker leest die live uit; lukt dat niet, dan geldt de laatst bekende,
-     en anders wat er bij de laatste menucheck stond. Zo nu en dan komt hij gegarandeerd
-     op de bon, in Wonder en in Gek. */
+     en anders wat er bij de laatste menucheck stond. In Wonder en Gek komt hij af en toe
+     gegarandeerd op de bon ('soms'), elke draai ('altijd', ook via een tik op de balk) of
+     nooit ('nooit', bijvoorbeeld bij een allergie). */
   const MAAND_VAST={naam:'Garnalen kroket', prijs:1.60, saus:true};   // Jamezz, 1 oktober 2026
   const MAAND_KEY='snackorakel_maand_v1';
   const MAAND_KANS=0.3;
@@ -708,12 +731,32 @@
     }
     toonMaand();
   }
+  const MAAND_HINT={soms:'Tik om hem elke draai erbij te krijgen',
+                    altijd:'✓ Elke draai erbij · tik voor af en toe',
+                    nooit:'Staat uit · tik om hem elke draai erbij te krijgen'};
   function toonMaand(){
     const el=document.getElementById('maand'); if(!el) return;
-    if(!MAAND){ el.classList.remove('show'); el.textContent=''; return; }
-    el.innerHTML=`⭐ Snack van de maand <b></b>`;
+    document.querySelectorAll('.maandrij').forEach(x=>x.style.display=MAAND?'':'none');
+    document.querySelectorAll('#seg-maand button').forEach(b=>b.classList.toggle('on', b.dataset.v===maandMode));
+    if(!MAAND){ el.classList.remove('show','altijd','nooit'); el.textContent=''; return; }
+    el.innerHTML=`⭐ Snack van de maand <b></b><small></small>`;
     el.querySelector('b').textContent=`${MAAND.n} · ${eur(MAAND.p)}`;
+    el.querySelector('small').textContent=MAAND_HINT[maandMode];
+    el.setAttribute('aria-pressed', maandMode==='altijd' ? 'true' : 'false');
+    el.classList.toggle('altijd', maandMode==='altijd');
+    el.classList.toggle('nooit', maandMode==='nooit');
     el.classList.add('show');
+  }
+  function zetMaandKeuze(v){
+    maandMode=v;
+    try{ localStorage.setItem(MAAND_KEUZE_KEY, v); }catch(e){}
+    toonMaand(); updateBudgetWarning();
+  }
+  // Tikken op de balk: af en toe <-> elke draai (vanuit 'nooit' ook naar elke draai)
+  function tikMaand(){
+    if(spinning || !MAAND) return;
+    zetMaandKeuze(maandMode==='altijd' ? 'soms' : 'altijd');
+    if(!muted) blip(maandMode==='altijd' ? 990 : 660, 0.09, 'triangle', 0.12);
   }
   function laadMaand(){
     let start=MAAND_VAST;
@@ -1385,6 +1428,15 @@
         kandidaten.push({items, redenen:sc.redenen, totaal, ...bon});
       }
     }
+    // Nog steeds niets binnen het budget? Dan de goedkoopste combinatie zelf bouwen,
+    // met zo zuinig mogelijke sauzen. Als de waarschuwing zegt dat het past, past dit.
+    if(limiet!=null && !kandidaten.some(k=>k.kosten<=limiet+0.001)){
+      const items=goedkoopsteItems(pool, ctx.vast);
+      if(items.length){
+        const sc=scoreCombo(items,ctx)||{totaal:-999, redenen:[]};
+        kandidaten.push({items, redenen:sc.redenen, totaal:sc.totaal, ...zuinigeBon(items, ctx, limiet)});
+      }
+    }
     if(!kandidaten.length){ const items=trekItems(pool, ctx.vast); return {items, redenen:[], ...prijsBon(items,ctx)}; }
     kandidaten.sort((a,b)=>b.totaal-a.totaal);
     // budget is een plafond: past er iets binnen, dan kiezen we alleen daaruit
@@ -1410,6 +1462,33 @@
     if(ctx.patat) t += patatPrijs+(patatSaus?patatSaus.prijs:0);
     if(ctx.shake) t += shakePrijs;
     return {sauzen, patatSaus, kosten:+t.toFixed(2)};
+  }
+
+  /* Bon voor het budgetvangnet: eerst de goedkoopste saus die bij de modus past
+     (Wonder: uit het smaakprofiel, Gek: uit de foute lijst), en als dat niet past
+     gewoon de goedkoopste saus die mag. */
+  function zuinigeBon(items, ctx, limiet){
+    const mag = n => SAUZEN.filter(x=>x.id!=='ui' && sausMag(x.id) && magOp(n, x.id)).map(x=>x.id);
+    const zuinig = ids => ids.length ? ids.reduce((a,b)=>sausPrijs(b)<sausPrijs(a)?b:a) : null;
+    const pm=patatSauzen(), pid=pm.length ? pm.reduce((a,b)=>PATAT_SAUS[b]<PATAT_SAUS[a]?b:a) : null;
+    const patatSaus = ctx.patat && pid ? {label:sausLabel(pid), prijs:PATAT_SAUS[pid]} : null;
+    const bon = keus => {
+      const sauzen=items.map(s=>{
+        if(!krijgtSaus(s.n)) return null;
+        const id=keus(s.n); return id ? alsSaus([id]) : null;
+      });
+      let t=items.reduce((a,s,i)=>a+s.p+(sauzen[i]?sauzen[i].prijs:0),0);
+      if(ctx.patat) t+=patatPrijs+(patatSaus?patatSaus.prijs:0);
+      if(ctx.shake) t+=shakePrijs;
+      return {sauzen, patatSaus, kosten:+t.toFixed(2)};
+    };
+    const passend = n => {
+      const m=mag(n);
+      const set = mode==='gek' ? gekFout(n) : [...wonderSet(n).goed, ...(wonderSet(n).wauw||[])];
+      return zuinig(set.filter(id=>m.includes(id))) || zuinig(m);
+    };
+    const a=bon(passend);
+    return (limiet==null || a.kosten<=limiet+0.001) ? a : bon(n=>zuinig(mag(n)));
   }
 
   /* ===== het verhaaltje — vertelt nu wáárom het klopt ===== */
@@ -1844,7 +1923,7 @@
     };
     // Snack van de maand: zo nu en dan gegarandeerd op de bon, als hij door de filters en het budget komt
     let keuze=null;
-    if(MAAND && snackPool().includes(MAAND) && Math.random()<MAAND_KANS){
+    if(MAAND && snackPool().includes(MAAND) && (maandMode==='altijd' || Math.random()<MAAND_KANS)){
       const k=kiesCombinatie({...ctx, vast:MAAND}, limiet);
       if(k.items.includes(MAAND) && (limiet==null || k.kosten<=limiet+0.001)) keuze=k;
     }
