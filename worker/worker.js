@@ -6,6 +6,7 @@
  *   POST /admin        inloggen (formulier)
  *   GET  /admin/uit    uitloggen
  *   GET  /stats        JSON, alleen met een geldige sessie
+ *   GET  /aanbieding   open — de snack van de maand, live uit de Jamezz-kaart van Karst
  *
  * Het wachtwoord staat als secret ADMIN_WACHTWOORD in de Worker, niet in de
  * broncode van de app. Na inloggen zet de Worker een ondertekende HttpOnly-cookie;
@@ -23,6 +24,56 @@ const html = (body, status = 200, extra = {}) =>
 
 const tekst = (v, max) => (typeof v === 'string' ? v.slice(0, max) : null);
 const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* ---------- snack van de maand ----------
+ * De app kan Jamezz niet zelf lezen (geen CORS), dus de Worker haalt de kaart op,
+ * pakt de categorie 'Aanbieding' en geeft alleen de losse snacks terug (geen
+ * hapjesschalen). Een uur in de cache, zodat Jamezz niet bij elke draai wordt bevraagd. */
+const JAMEZZ = 'https://qrv5.jamezz.app/v5_2/qr/data-fetch-v2';
+const JAMEZZ_KOP = {
+  Accept: 'application/json',
+  'Session-MID': '299AEA',
+  'Session-Return-Path': 'https://qrv5.jamezz.app/v5/qr/299AEA/return',
+  'Session-Locale': 'nl',
+};
+const lijst = x => (Array.isArray(x) ? x : Object.values(x || {}));
+
+function leesAanbieding(d) {
+  const kaart = lijst(d.menukaarts).find(m => /aanbieding/i.test(m.naam || ''));
+  if (!kaart) return [];
+  const ids = new Set(lijst(d.menukaart_products).filter(x => String(x.menukaart_id) === String(kaart.id)).map(x => String(x.product_id)));
+  const groepen = Object.fromEntries(lijst(d.option_groups).map(g => [String(g.id), g]));
+  return lijst(d.products)
+    .filter(p => ids.has(String(p.id)) && !p.not_available)
+    .filter(p => !/schaal|menu|pakket/i.test(p.naam || '') && Number(p.prijs) > 0 && Number(p.prijs) < 10)
+    .map(p => ({
+      naam: String(p.naam).trim().slice(0, 40),
+      prijs: Number(p.prijsTakeaway ?? p.prijs),
+      omschrijving: tekst(p.omschrijving, 200),
+      // kun je er online een saus bij kiezen?
+      saus: (p.product_option_groups || []).some(g => /saus|sauz/i.test((groepen[String(g.option_group_id)] || {}).name || '')),
+    }));
+}
+
+async function aanbieding(ctx) {
+  const cache = caches.default;
+  const sleutel = new Request('https://snackorakel-cache.local/aanbieding-v1');
+  const bewaard = await cache.match(sleutel);
+  if (bewaard) return bewaard;
+  let snacks;
+  try {
+    const r = await fetch(JAMEZZ, { headers: JAMEZZ_KOP });
+    if (!r.ok) throw new Error('status ' + r.status);
+    snacks = leesAanbieding((await r.json()).data || {});
+  } catch (e) {
+    return json({ aanbieding: [], fout: 'Jamezz niet bereikbaar' }, 502);
+  }
+  const antwoord = new Response(JSON.stringify({ aanbieding: snacks, opgehaald: new Date().toISOString() }), {
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600', ...CORS },
+  });
+  ctx.waitUntil(cache.put(sleutel, antwoord.clone()));
+  return antwoord;
+}
 
 /* ---------- sessie ---------- */
 const COOKIE = 'orakel_admin';
@@ -155,7 +206,7 @@ async function haalRijen(env, limiet = 1000) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
@@ -185,6 +236,9 @@ export default {
       )));
       return json({ ok: true, opgeslagen: rijen.length });
     }
+
+    /* --- snack van de maand: open, gewoon een stukje van de openbare kaart --- */
+    if (url.pathname === '/aanbieding' && request.method === 'GET') return aanbieding(ctx);
 
     /* --- inloggen --- */
     if (url.pathname === '/admin' && request.method === 'POST') {

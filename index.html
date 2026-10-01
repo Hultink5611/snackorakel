@@ -41,6 +41,10 @@
     text-shadow:3px 3px 0 var(--rood);
   }
   .sign .sub{color:var(--creme); font-family:'Bree Serif',serif; font-size:14px; letter-spacing:2px; text-transform:uppercase}
+  .maand{display:none; margin:12px auto 0; max-width:300px; background:var(--geel); color:var(--bruin);
+    border-radius:10px; padding:6px 12px 7px; font-size:12px; line-height:1.35; box-shadow:0 3px 0 rgba(0,0,0,.3)}
+  .maand.show{display:block}
+  .maand b{display:block; font-family:'Anton',sans-serif; font-weight:400; font-size:17px; text-transform:uppercase; letter-spacing:.5px}
   .bulbs{position:absolute; top:-4px; left:0; right:0; display:flex; justify-content:space-around; padding:0 14px}
   .bulb{width:9px; height:9px; border-radius:50%; background:var(--geel); margin-top:-4px; box-shadow:0 0 6px var(--geel); animation:flick 1.2s infinite}
   .bulb:nth-child(odd){animation-delay:.6s}
@@ -164,6 +168,7 @@
   .actions button:active{transform:translateY(3px); box-shadow:0 0 0 var(--bruin)}
   .placeholder{margin-top:22px; text-align:center; color:var(--creme); font-family:'Bree Serif',serif; font-size:14px; opacity:.85}
   .tag{font-size:10px; background:var(--groen); color:#fff; padding:1px 6px; border-radius:6px; margin-left:6px; vertical-align:1px; font-weight:600}
+  .tag.maandtag{background:var(--geel-warm)}
   .chiphead{display:flex; align-items:center; justify-content:space-between; gap:8px}
   .chiplink{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--rood); cursor:pointer; border-bottom:2px solid var(--rood)}
   /* ---- naam-vraag ---- */
@@ -268,6 +273,7 @@
     <div class="friet">🍟</div>
     <h1>Het<br>Snackorakel</h1>
     <div class="sub">Karst · Dedemsvaart</div>
+    <div class="maand" id="maand" aria-live="polite"></div>
   </div>
 
   <button class="install-btn" id="installBtn" onclick="doInstall()">📲 Installeer als app</button>
@@ -511,6 +517,7 @@
   const FOOD_POOL=['🍟','🍗','🌭','🧀','🍔','🥟','🍢','🧆','🍜','🥚','🍖','🌶️','🥗','🌯','🥤','🥔'];
   function emojiFor(name){
     const n=name.toLowerCase();
+    if(/garnal/.test(n)) return '🦐';
     if(/patat|aardappel/.test(n)) return '🍟';
     if(/shake/.test(n)) return '🥤';
     if(/frikandel/.test(n)) return '🌭';
@@ -675,6 +682,62 @@
   const LOG_KEY='snackorakel_log_v1', WACHTRIJ_KEY='snackorakel_wachtrij_v1';
   const MENU_BIJGEWERKT='1 oktober 2026';  // bron: Jamezz QR-menukaart van Karst
 
+  /* ===== Snack van de maand =====
+     Karst zet z'n tijdelijke aanbieding in Jamezz onder 'Aanbieding' (en op de site onder
+     /Aanbieding). De Worker leest die live uit; lukt dat niet, dan geldt de laatst bekende,
+     en anders wat er bij de laatste menucheck stond. Zo nu en dan komt hij gegarandeerd
+     op de bon, in Wonder en in Gek. */
+  const MAAND_VAST={naam:'Garnalen kroket', prijs:1.60, saus:true};   // Jamezz, 1 oktober 2026
+  const MAAND_KEY='snackorakel_maand_v1';
+  const MAAND_KANS=0.3;
+  let MAAND=null;      // het SNACKS-item dat nu snack van de maand is
+  function zetMaand(a){
+    for(let i=SNACKS.length-1;i>=0;i--){
+      const x=SNACKS[i];
+      if(x.maandExtra){ SNACKS.splice(i,1); continue; }
+      if(x.maand){ if(x.pOud!=null) x.p=x.pOud; delete x.pOud; delete x.maand; delete x.geenSaus; }
+    }
+    MAAND=null;
+    if(a && typeof a.naam==='string' && a.naam.replace(/[<>&"'`]/g,'').trim() && +a.prijs>0 && +a.prijs<15){
+      const naam=a.naam.replace(/[<>&"'`]/g,'').trim().slice(0,40);   // komt van het net: geen HTML
+      let x=SNACKS.find(y=>y.n.toLowerCase()===naam.toLowerCase());
+      if(x){ x.pOud=x.p; x.p=+a.prijs; }           // staat al op de kaart: dan geldt de actieprijs
+      else { x={n:naam, p:+a.prijs, vega:/vega|vegetar|groente/i.test(naam), maandExtra:true}; SNACKS.push(x); }
+      x.maand=true; x.geenSaus = a.saus===false;
+      MAAND=x;
+    }
+    toonMaand();
+  }
+  function toonMaand(){
+    const el=document.getElementById('maand'); if(!el) return;
+    if(!MAAND){ el.classList.remove('show'); el.textContent=''; return; }
+    el.innerHTML=`⭐ Snack van de maand <b></b>`;
+    el.querySelector('b').textContent=`${MAAND.n} · ${eur(MAAND.p)}`;
+    el.classList.add('show');
+  }
+  function laadMaand(){
+    let start=MAAND_VAST;
+    try{ const c=JSON.parse(localStorage.getItem(MAAND_KEY)||'null'); if(c && 'item' in c) start=c.item; }catch(e){}
+    zetMaand(start);
+    if(!LOG_ENDPOINT || !window.fetch) return;
+    fetch(LOG_ENDPOINT+'/aanbieding').then(r=>r.ok ? r.json() : null).then(d=>{
+      if(!d || !Array.isArray(d.aanbieding)) return;     // Worker (nog) zonder /aanbieding: laat staan
+      const item=d.aanbieding[0]||null;                   // lege lijst = deze maand geen aanbieding
+      try{ localStorage.setItem(MAAND_KEY, JSON.stringify({item, t:Date.now()})); }catch(e){}
+      const zet=()=>{ if(spinning) return setTimeout(zet, 1500); zetMaand(item); updateBudgetWarning(); };
+      zet();
+    }).catch(()=>{});
+  }
+  const MAAND_ZIN={
+    wonder:[n=>` ${hoofd(n)} is deze maand de aanbieding bij Karst, dus die mocht niet ontbreken.`,
+            n=>` En ${n}: de snack van de maand, voor ${eur(MAAND.p)}.`],
+    gek:[n=>` De snack van de maand kon het orakel ook niet laten liggen.`,
+         n=>` ${hoofd(n)} is de snack van de maand. Het orakel weet niet waarom dat ertoe doet, maar het telt mee.`],
+    // bij één snack is die ene snack de aanbieding: dan niet nog eens de naam noemen
+    wonderEen:[' Deze maand is dat de aanbieding bij Karst.', ' Het is de snack van de maand, dus het orakel hoefde niet lang na te denken.'],
+    gekEen:[' Het is de snack van de maand. Het orakel vond dat reden genoeg.', ' Snack van de maand, en het orakel heeft er toch iets geks van gemaakt.']
+  };
+
   const bewaar=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
   const lees=(k,d)=>{ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):d; }catch(e){ return d; } };
 
@@ -783,6 +846,7 @@
     toonWie();
     kluisKnopBij();
     if(!naam) vraagNaam(false);
+    laadMaand();
     verstuurWachtrij();
     if(statsGevraagd()) toonStats();
   }
@@ -1015,6 +1079,7 @@
     {m:/kip|nugget|wing|corn|strip|finger/,  goed:['curry','sate','chili'],         wauw:['bbq','zoetzuur']},
     {m:/kaas|tengel|souffl/,                 goed:['chili','ketchup'],              wauw:['sate']},
     {m:/vlam|mexicano|pikanto|hete donder/,  goed:['joppie','zigeuner','chili'],    wauw:['knoflook']},
+    {m:/garnal/,                             goed:['mayo','knoflook'],              wauw:['chili']},
     {m:/kroket|krokidel/,                    goed:['mosterd','mayo','curry'],       wauw:['joppie']},
     {m:/bitterbal/,                          goed:['mosterd','mayo'],               wauw:['curry']},
     {m:/gehaktbal/,                          goed:['curry','mayo','mosterd'],       wauw:['chili']},
@@ -1045,6 +1110,7 @@
     {m:/vlam|mexicano|pikanto|hete donder/,  fout:['appelmoes','zoetzuur','mayo','mosterd']},
     // kip met appelmoes is juist heel gewoon, dus die laten we hier weg
     {m:/kip|nugget|wing/,                    fout:['mosterd','knoflook','oorlog-scherp','zigeuner']},
+    {m:/garnal/,                             fout:['appelmoes','bbq','mosterd','sate-scherp']},
     {m:/kroket|krokidel|bitterbal/,          fout:['zoetzuur','appelmoes','bbq','sate-scherp']},
     // frikandel met appelmoes is een gewoon kindermenu, dus die telt hier niet
     {m:/frikandel/,                          fout:['zoetzuur','bbq','sate-scherp','mosterd']},
@@ -1088,6 +1154,7 @@
   // Krijgt deze snack sowieso saus? (deterministisch → prijs is vooraf te berekenen)
   function krijgtSaus(naam){
     if(geenLosseSaus(naam)) return false;
+    if(MAAND && MAAND.geenSaus && naam===MAAND.n) return false;   // aanbieding zonder sauskeuze in Jamezz
     return SAUZEN.some(s=>sausMag(s.id));
   }
   function kiesSaus(naam, magCombi){
@@ -1124,6 +1191,7 @@
     {m:/nugget|wings|kipstrip|kipfinger|kipcorn/, fam:'kip', kern:'kip',  tex:'krokant', pit:0, rijk:2, zeldz:0},
     {m:/kaastengel/,                     fam:'kaassnack', kern:'kaas',    tex:'krokant', pit:0, rijk:2, zeldz:2},
     {m:/kaassouffl/,                     fam:'souffle',   kern:'kaas',    tex:'krokant', pit:0, rijk:2, zeldz:0},
+    {m:/garnal/,                         fam:'kroket',    kern:'vis',     tex:'krokant', pit:0, rijk:2, zeldz:2},
     {m:/kaaskroket/,                     fam:'kroket',    kern:'kaas',    tex:'krokant', pit:0, rijk:2, zeldz:1},
     {m:/veg\. kroket|groentekroket/,     fam:'kroket',    kern:'groente', tex:'krokant', pit:0, rijk:1, zeldz:1},
     {m:/kroket|krokidel/,                fam:'kroket',    kern:'ragout',  tex:'krokant', pit:0, rijk:2, zeldz:0},
@@ -1258,7 +1326,16 @@
   }
 
   /* Trekt één kandidaat uit de pool, met respect voor de kip-instelling. */
-  function trekItems(pool){
+  function trekItems(pool, vast){
+    if(vast){                                          // snack van de maand moet erop
+      const rest=pool.filter(s=>s!==vast);
+      let extra=null;
+      if(kipMode==='altijd' && !isKip(vast.n) && nSnacks>1){
+        const kp=rest.filter(s=>isKip(s.n));
+        if(kp.length){ const k=one(kp); extra=[k, ...pick(rest.filter(s=>s!==k), nSnacks-2)]; }
+      }
+      return pick([vast, ...(extra||pick(rest, nSnacks-1))], nSnacks);
+    }
     if(kipMode==='altijd'){
       const kipPool=pool.filter(s=>isKip(s.n));
       if(kipPool.length){
@@ -1278,7 +1355,7 @@
     if(!pool.length) return {items:[], redenen:[]};
     const gezien={}, kandidaten=[];
     for(let i=0;i<N_KANDIDATEN;i++){
-      const items=trekItems(pool);
+      const items=trekItems(pool, ctx.vast);
       if(!items.length) continue;
       const k=sig(items);
       if(gezien[k]) continue;
@@ -1295,7 +1372,7 @@
       const kost = s => s.p+(krijgtSaus(s.n)?goedkoopsteSaus():0);
       const goedkoop=[...pool].sort((a,b)=>kost(a)-kost(b)).slice(0, Math.max(10, Math.ceil(pool.length*0.4)));
       for(let i=0;i<N_KANDIDATEN;i++){
-        const items=trekItems(goedkoop);
+        const items=trekItems(goedkoop, ctx.vast);
         if(!items.length) continue;
         const k=sig(items);
         if(gezien[k]) continue;
@@ -1308,7 +1385,7 @@
         kandidaten.push({items, redenen:sc.redenen, totaal, ...bon});
       }
     }
-    if(!kandidaten.length){ const items=trekItems(pool); return {items, redenen:[], ...prijsBon(items,ctx)}; }
+    if(!kandidaten.length){ const items=trekItems(pool, ctx.vast); return {items, redenen:[], ...prijsBon(items,ctx)}; }
     kandidaten.sort((a,b)=>b.totaal-a.totaal);
     // budget is een plafond: past er iets binnen, dan kiezen we alleen daaruit
     let veld=kandidaten;
@@ -1340,6 +1417,7 @@
      Weetjes zijn feiten uit productinformatie en snackbronnen, geen verzinsels.
      De zinnen eromheen wisselen, zodat twee bonnen zelden hetzelfde zeggen. */
   const WEETJES=[
+    {m:/garnal/,       t:['Een garnalenkroket is gevuld met ragout van Noordzeegarnalen.']},
     {m:/kipcorn/,      t:['De kipcorn bestaat sinds 1986 en heeft een korst van maïspaneermeel.']},
     {m:/loempidel/,    t:['Een loempidel is een frikandel in een loempiajasje, met een zoet sausje ertussen.']},
     {m:/krokidel/,     t:['De krokidel is een kroket met frikandelragout, bedacht op de Frikandel Disco in Amsterdam.']},
@@ -1764,13 +1842,19 @@
       patat: document.getElementById('t-patat').classList.contains('on'),
       shake: document.getElementById('t-shake').classList.contains('on')
     };
-    const keuze=receptVoorstel(ctx, limiet) || kiesCombinatie(ctx, limiet);
+    // Snack van de maand: zo nu en dan gegarandeerd op de bon, als hij door de filters en het budget komt
+    let keuze=null;
+    if(MAAND && snackPool().includes(MAAND) && Math.random()<MAAND_KANS){
+      const k=kiesCombinatie({...ctx, vast:MAAND}, limiet);
+      if(k.items.includes(MAAND) && (limiet==null || k.kosten<=limiet+0.001)) keuze=k;
+    }
+    keuze = keuze || receptVoorstel(ctx, limiet) || kiesCombinatie(ctx, limiet);
     const chosen=keuze.items;
 
     let tot=0; const lines=[]; const reelItems=[]; const snackNamen=[];
     chosen.forEach((s,i)=>{
       const sz=(keuze.sauzen||[])[i]||null; tot+=s.p+(sz?sz.prijs:0);
-      lines.push({type:'snack', naam:s.n, prijs:s.p, vega:s.vega, saus:sz?sz.label:null, sausPrijs:sz?sz.prijs:0});
+      lines.push({type:'snack', naam:s.n, prijs:s.p, vega:s.vega, maand:!!s.maand, saus:sz?sz.label:null, sausPrijs:sz?sz.prijs:0});
       reelItems.push({emoji:emojiFor(s.n), label:s.n});
       snackNamen.push(s.n);
     });
@@ -1786,9 +1870,13 @@
       reelItems.push({emoji:'🥤', label:smaak});
     }
     const repSaus = (lines.find(l=>l.saus)||{}).saus || (patat&&patat.saus) || null;
-    const story = keuze.recept
+    let story = keuze.recept
       ? receptVerhaal(keuze.recept, keuze.zoalsBedoeld, shake?shake.smaak:null)
       : verhaal(chosen, repSaus, shake?shake.smaak:null, keuze.redenen||[], lines);
+    const vanDeMaand=chosen.find(s=>s.maand);
+    if(vanDeMaand && !keuze.recept) story += chosen.length===1
+      ? one(MAAND_ZIN[mode==='gek'?'gekEen':'wonderEen'])
+      : one(MAAND_ZIN[mode==='gek'?'gek':'wonder'])(prozaNaam(vanDeMaand.n));
     tot=+tot.toFixed(2);
     return {chosen, lines, patat, shake, tot, story, reelItems, snackNamen, modus:mode,
             recept: keuze.recept ? keuze.recept.naam : null, receptId: keuze.recept ? keuze.recept.id : null};
@@ -1842,9 +1930,9 @@
   function renderBon(order){
     const box=document.getElementById('items'); box.innerHTML='';
     const regels=[];
-    const addItem=(q,naam,prijs,vega)=>{
+    const addItem=(q,naam,prijs,vega,maand)=>{
       const d=document.createElement('div'); d.className='item';
-      d.innerHTML=`<span><span class="q">${q}×</span> ${naam}${vega?'<span class="tag">veg</span>':''}</span><span>${eur(prijs)}</span>`;
+      d.innerHTML=`<span><span class="q">${q}×</span> ${naam}${vega?'<span class="tag">veg</span>':''}${maand?'<span class="tag maandtag">⭐ van de maand</span>':''}</span><span>${eur(prijs)}</span>`;
       box.appendChild(d); regels.push(`${q}x ${naam}  ${eur(prijs)}`);
     };
     const addSaus=(saus, prijs)=>{
@@ -1852,7 +1940,7 @@
       sd.innerHTML=`↳ met <b>${saus}</b> <span style="float:right">${eur(prijs)}</span>`;
       box.appendChild(sd); regels.push(`   ↳ met ${saus}  ${eur(prijs)}`);
     };
-    order.lines.forEach(l=>{ addItem(1,l.naam,l.prijs,l.vega); if(l.saus) addSaus(l.saus, l.sausPrijs); });
+    order.lines.forEach(l=>{ addItem(1,l.naam,l.prijs,l.vega,l.maand); if(l.saus) addSaus(l.saus, l.sausPrijs); });
     if(order.patat){ addItem(1,order.patat.naam,order.patat.prijs,false); if(order.patat.saus) addSaus(order.patat.saus, order.patat.sausPrijs); }
     if(order.shake){ addItem(1,`${order.shake.naam} ${order.shake.smaak}`,order.shake.prijs,false); }
 

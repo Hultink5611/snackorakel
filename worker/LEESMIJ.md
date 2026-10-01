@@ -46,6 +46,7 @@ wachtwoord ondertekend.
 | POST    | `/admin`     | —              | inloggen                                            |
 | GET     | `/admin/uit` | —              | uitloggen                                           |
 | GET     | `/stats`     | sessie vereist | dezelfde data als JSON                              |
+| GET     | `/aanbieding`| open           | snack van de maand, live uit Jamezz (1 uur cache)   |
 
 `POST /draai` moet open blijven: de app is een publieke pagina en heeft geen
 sessie. Wil je ook dat dichttimmeren, zet dan `SCHRIJF_SLEUTEL` als secret en
