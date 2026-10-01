@@ -20,6 +20,10 @@ uit — als kassabon, met een mini-verhaaltje.
 - **Wie draait er** — naam bij het eerste bezoek; elke draai gaat naar een Cloudflare
   Worker + D1 (`worker/`). Meekijken met `?stats` achter de URL.
 - Kassabon kopiëren (alleen de snacks).
+- **Snack van de maand** — de tijdelijke aanbieding van Karst (nu de garnalenkroket voor €1,60)
+  staat bovenin, en komt in Wonder én Gek zo nu en dan gegarandeerd op de bon, met een sterretje
+  en een zinnetje in het verhaal. De Worker leest hem live uit de categorie 'Aanbieding' in
+  Jamezz (`/aanbieding`); lukt dat niet, dan geldt de laatst bekende.
 
 ## Hoe de combinatie tot stand komt
 
