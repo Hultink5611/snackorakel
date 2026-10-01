@@ -149,6 +149,8 @@
   .item{display:flex; justify-content:space-between; font-size:15px; padding:4px 0; font-variant-numeric:tabular-nums}
   .item .q{font-weight:800}
   .saus{font-size:12px; color:#8a7560; padding:0 0 2px 14px}
+  .recept{margin-top:10px; font-family:'Anton',sans-serif; font-size:13px; text-transform:uppercase; letter-spacing:.4px;
+    color:var(--rood); border-top:2px dashed #d9c3a3; padding-top:9px}
   .story{font-size:12.5px; color:#6b513c; font-style:italic; padding:10px 2px 2px; line-height:1.45}
   .tot{display:flex; justify-content:space-between; font-family:'Anton',sans-serif; font-size:22px; text-transform:uppercase; margin-top:6px}
   .barcode{height:34px; margin-top:14px; background:repeating-linear-gradient(90deg,var(--bruin) 0 2px,transparent 2px 4px,var(--bruin) 4px 7px,transparent 7px 11px)}
@@ -831,6 +833,7 @@
       id: 's'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
       ts: new Date().toISOString(),
       modus: laatsteOrder.modus,
+      recept: laatsteOrder.recept || null,
       regels: laatsteOrder.lines.map(l=>({naam:l.naam, prijs:l.prijs, saus:l.saus, sausPrijs:l.sausPrijs||0, vega:l.vega, score:0})),
       patat: laatsteOrder.patat, shake: laatsteOrder.shake,
       tot: laatsteOrder.tot
@@ -901,7 +904,7 @@
       ].join('');
       return `<div class="kluiskaart">
         <div class="kop">
-          <span class="wanneer">${wanneer(sp.ts)}</span>
+          <span class="wanneer">${wanneer(sp.ts)}${sp.recept?` · <span style="color:var(--rood)">${veilig(sp.recept)}</span>`:''}</span>
           <span class="badge">${sp.modus==='gek'?'Gek 🤪':'Wonder ✨'}</span>
         </div>
         ${regels}${extra}
@@ -1096,56 +1099,94 @@
     {m:/schnitzel/,                      fam:'schnitzel', kern:'vlees',   tex:'krokant', pit:0, rijk:3, zeldz:2},
     {m:/nugget|wings|kipstrip|kipfinger|kipcorn/, fam:'kip', kern:'kip',  tex:'krokant', pit:0, rijk:2, zeldz:0},
     {m:/kaastengel/,                     fam:'kaassnack', kern:'kaas',    tex:'krokant', pit:0, rijk:2, zeldz:2},
-    {m:/kaassouffl|ham\/kaas/,           fam:'souffle',   kern:'kaas',    tex:'krokant', pit:0, rijk:2, zeldz:0},
+    {m:/kaassouffl/,                     fam:'souffle',   kern:'kaas',    tex:'krokant', pit:0, rijk:2, zeldz:0},
     {m:/kaaskroket/,                     fam:'kroket',    kern:'kaas',    tex:'krokant', pit:0, rijk:2, zeldz:1},
     {m:/veg\. kroket|groentekroket/,     fam:'kroket',    kern:'groente', tex:'krokant', pit:0, rijk:1, zeldz:1},
     {m:/kroket|krokidel/,                fam:'kroket',    kern:'ragout',  tex:'krokant', pit:0, rijk:2, zeldz:0},
     {m:/bitterbal/,                      fam:'bal',       kern:'ragout',  tex:'krokant', pit:0, rijk:2, zeldz:0},
     {m:/gehaktbal/,                      fam:'bal',       kern:'vlees',   tex:'zacht',   pit:0, rijk:2, zeldz:1},
     {m:/berenhap/,                       fam:'bal',       kern:'vlees',   tex:'zacht',   pit:0, rijk:2, zeldz:2},
-    {m:/vlammetjes/,                     fam:'rol',       kern:'vlees',   tex:'krokant', pit:2, rijk:2, zeldz:1},
+    // vlammetjes en vlampijp: gevuld met pittig varkensvlees en Spaanse peper
+    {m:/vlammetjes|vlampijp/,            fam:'rol',       kern:'vlees',   tex:'krokant', pit:2, rijk:2, zeldz:1},
     {m:/mini loempia/,                   fam:'rol',       kern:'groente', tex:'krokant', pit:0, rijk:1, zeldz:1},
     {m:/loempia/,                        fam:'rol',       kern:'groente', tex:'krokant', pit:0, rijk:2, zeldz:0},
-    {m:/mexicano|pikanto|hete donder/,   fam:'pittig',    kern:'vlees',   tex:'krokant', pit:2, rijk:2, zeldz:1},
-    {m:/loempidel|smulrol|shoarmarol|sitostick|boerenbrok|trio|vlampijp/, fam:'rol', kern:'vlees', tex:'krokant', pit:1, rijk:2, zeldz:2},
+    // mexicano, pikanto, hete donder: pittig gehakt, niet gepaneerd
+    {m:/mexicano|pikanto|hete donder/,   fam:'pittig',    kern:'vlees',   tex:'zacht',   pit:2, rijk:2, zeldz:1},
+    // sitostick: kip en kalkoen met veel ui, gepaneerd
+    {m:/sitostick/,                      fam:'rol',       kern:'kip',     tex:'krokant', pit:0, rijk:2, zeldz:2},
+    // boerenbrok: grof gehakt met soepgroente in een lapje schouderkarbonade — geen deegrol
+    {m:/boerenbrok/,                     fam:'brok',      kern:'vlees',   tex:'zacht',   pit:0, rijk:3, zeldz:2},
+    {m:/loempidel|smulrol|shoarmarol|trio/, fam:'rol',    kern:'vlees',   tex:'krokant', pit:0, rijk:2, zeldz:2},
     {m:/bami|nasi/,                      fam:'bami',      kern:'rijst',   tex:'krokant', pit:0, rijk:1, zeldz:1},
     {m:/frikandel/,                      fam:'frikandel', kern:'vlees',   tex:'zacht',   pit:0, rijk:2, zeldz:0},
     {m:/braadworst/,                     fam:'worst',     kern:'vlees',   tex:'zacht',   pit:0, rijk:2, zeldz:1},
     {m:/hamburger/,                      fam:'burger',    kern:'vlees',   tex:'zacht',   pit:0, rijk:2, zeldz:1}
   ];
   const PROFIEL_DEFAULT={fam:'overig', kern:'vlees', tex:'krokant', pit:0, rijk:2, zeldz:1};
+
+  /* Smaaklabels: waar het wow-lijstje op draait. Eén snack kan er meer hebben. */
+  const LABELS=[
+    {tag:'ui',      m:/sitostick|berenhap|curry & ui/},
+    {tag:'indisch', m:/bami|nasi|saté|sate|loempia|loempidel/},
+    {tag:'gehakt',  m:/gehaktbal|hamburger|berenhap|mexicano|boerenbrok|hete donder|pikanto|vlampijp|vlammetjes|smulrol/}
+  ];
   const _profCache={};
   function prof(s){
     if(_profCache[s.n]) return _profCache[s.n];
-    const p={...(PROFIELEN.find(e=>e.m.test(s.n.toLowerCase()))||PROFIEL_DEFAULT)};
+    const naam=s.n.toLowerCase();
+    const p={...(PROFIELEN.find(e=>e.m.test(naam))||PROFIEL_DEFAULT)};
     delete p.m;
     if(s.vega && p.kern==='vlees') p.kern='vega';       // vega frikandel botst niet met echt vlees
     if(s.p>=4.2) p.rijk+=1;                             // grotere porties vullen zwaarder
     if(s.p>=6.5) p.rijk+=2;                             // halve kip / 20 nuggets = een maaltijd op zich
     if(s.p>=5) p.zeldz+=1;                              // de grote jongens zie je zelden
+    p.tags = new Set(LABELS.filter(l=>l.m.test(naam)).map(l=>l.tag));
+    if(p.pit>=2) p.tags.add('vuur');
+    if(p.kern==='kaas') p.tags.add('kaas');
+    if(p.kern==='kip') p.tags.add('kip');
+    if(p.kern==='rijst') p.tags.add('rijst');
+    if(p.kern==='groente') p.tags.add('groente');
+    if(s.vega) p.tags.add('vega');
     return _profCache[s.n]=p;
   }
 
-  // Paren die verrassen én kloppen — de 'wow, hier had ik nooit aan gedacht'-as.
-  const WOW_PAREN=[
-    {a:'kaas',   b:'kip',     pt:6, r:'kaas naast kip — niemand bestelt dat samen, en dat is precies waarom het werkt'},
-    {a:'kaas',   b:'groente', pt:5, r:'smeltende kaas tegen iets groens'},
-    {a:'kip',    b:'ragout',  pt:5, r:'stevige kip tegenover romige ragout'},
-    {a:'rijst',  b:'kip',     pt:6, r:'oosters en frituur in dezelfde hand'},
-    {a:'rijst',  b:'kaas',    pt:5, r:'bami en kaas — foute combinatie op papier, feest in het vet'},
-    {a:'kaas',   b:'ragout',  pt:4, r:'twee soorten smelt onder twee soorten korst'},
-    {a:'groente',b:'vlees',   pt:3, r:'groen naast vlees, netjes in balans'},
-    {a:'vega',   b:'kaas',    pt:4, r:'vega met kaas — verrassend compleet'},
-    {a:'kip',    b:'groente', pt:4, r:'kip met iets groens ertegenaan'}
+  /* ===== het wow-lijstje =====
+     Gebaseerd op hoe smaken elkaar versterken: vuur wordt geblust door zuivel,
+     gelijke aroma's (ui bij ui) rijmen, gehakt en kaas is de cheeseburger-basis,
+     en rijst met kip is de Indische keuken. Elke regel heeft meerdere zinnen,
+     zodat het verhaaltje niet steeds hetzelfde zegt. */
+  const WOW_REGELS=[
+    {a:'vuur',    b:'kaas',    pt:7, r:['pit tegen smeltende kaas: de kaas blust wat de ander aansteekt',
+                                         'vuur en kaas, de oudste truc uit de keuken',
+                                         'de één brandt, de ander verzacht']},
+    {a:'ui',      b:'ui',      pt:6, r:['twee keer ui: dezelfde geur, twee keer zo sterk',
+                                         'ui bij ui versterkt elkaar in plaats van te botsen']},
+    {a:'gehakt',  b:'kaas',    pt:5, r:['gehakt met gesmolten kaas, de basis van elke cheeseburger',
+                                         'vlees en kaas, zoals op een goede burger']},
+    {a:'rijst',   b:'kip',     pt:5, r:['rijst met kip, oosters en frituur in één hand',
+                                         'kip bij rijst, zoals in de Indische keuken']},
+    {a:'indisch', b:'indisch', pt:4, r:['samen bijna een rijsttafel',
+                                         'een stukje Indische keuken uit de frituur']},
+    {a:'kip',     b:'kaas',    pt:4, r:['kip met kaas: klinkt gewoon, smaakt beter dan je denkt']},
+    {a:'vega',    b:'kaas',    pt:3, r:['vega met kaas, verrassend compleet']},
+    {a:'groente', b:'gehakt',  pt:2, r:['groen naast gehakt, netjes in balans']}
   ];
-  function wowPaar(a,b){ return WOW_PAREN.find(w=>(w.a===a&&w.b===b)||(w.a===b&&w.b===a)); }
+  function wowRegels(p, q){
+    return WOW_REGELS.filter(w =>
+      (p.tags.has(w.a) && q.tags.has(w.b)) || (p.tags.has(w.b) && q.tags.has(w.a)));
+  }
 
   /* ===== geheugen: niet twee keer achter elkaar hetzelfde ===== */
   const HKEY='snackorakel_hist_v1';
-  let HIST={snacks:[],combos:[]};
+  let HIST={snacks:[],combos:[],recepten:[]};
   try{ const h=JSON.parse(localStorage.getItem(HKEY)); if(h&&h.snacks) HIST=h; }catch(e){}
   const sig = items => items.map(s=>s.n).sort().join('|');
-  function onthoud(items){
+  function onthoud(items, receptId){
+    // per draai: welk recept (of geen). Zo telt 'net gehad' in draaien, niet in
+    // recepten — anders blijven er bij weinig passende recepten nooit meer over.
+    if(!HIST.recepten) HIST.recepten=[];
+    HIST.recepten.unshift(receptId||null); HIST.recepten=HIST.recepten.slice(0,12);
+    if(receptId){ HIST.receptenLang=[receptId,...(HIST.receptenLang||[]).filter(x=>x!==receptId)].slice(0,40); }
     items.forEach(s=>HIST.snacks.unshift(s.n));
     HIST.snacks=HIST.snacks.slice(0,10);
     HIST.combos.unshift(sig(items));
@@ -1165,21 +1206,21 @@
       if(p[i].tex!==p[j].tex){
         harm+=4;
         const paar=[p[i].tex,p[j].tex];
-        if(paar.includes('krokant')&&paar.includes('zacht')){ harm+=3; redenen.push('krokant tegenover zacht'); }
+        if(paar.includes('krokant')&&paar.includes('zacht')){ harm+=3;
+          redenen.push(one(['krokant tegenover zacht','een knapperige korst naast iets zachts','eerst het knisperen, dan het wegsmelten'])); }
       } else harm-=2;
-      const w=wowPaar(p[i].kern,p[j].kern);
-      if(w){ wow+=w.pt; redenen.push(w.r); }
+      wowRegels(p[i],p[j]).forEach(w=>{ wow+=w.pt; redenen.push(one(w.r)); });
     }
 
     const pit=p.reduce((a,x)=>a+x.pit,0);
     if(items.length>1){
-      if(pit>=1&&pit<=2){ harm+=4; redenen.push('één pittige die de rest wakker schudt'); }
+      if(pit>=1&&pit<=2){ harm+=4; redenen.push(one(['één pittige die de rest wakker schudt','net genoeg vuur om op te letten','een beetje pit, de rest mag bijkomen'])); }
       if(pit===0) harm-=1;
       if(pit>3) harm-=7;                                // alles vuur = niks proeven
     }
     const rijk=p.reduce((a,x)=>a+x.rijk,0)+(ctx.patat?2:0)+(ctx.shake?1:0);
     const fris=p.some(x=>x.tex==='fris');
-    if(fris && rijk>=4){ harm+=8; redenen.push('iets fris dat dwars door het vet snijdt'); }
+    if(fris && rijk>=4){ harm+=8; redenen.push(one(['iets fris dat dwars door het vet snijdt','het frisse breekt het vet','tussen de frituur door even iets fris'])); }
     if(!fris && rijk>=8) harm-=5;
     if(rijk>=11) harm-=6;
     if(ctx.patat) harm += p.every(x=>x.tex==='krokant') ? -4 : 2;   // patat is al krokant
@@ -1271,31 +1312,306 @@
   }
 
   /* ===== het verhaaltje — vertelt nu wáárom het klopt ===== */
-  function verhaal(chosen, saus, shake, redenen){
-    const a=chosen[0].n;
-    const multi=chosen.length>1;
-    const combo = multi ? chosen.slice(0,-1).map(s=>s.n).join(', ')+' en '+chosen[chosen.length-1].n : a;
-    const shakeBit = shake ? ` De ${shake} milkshake spoelt het weg als een beloning.` : '';
-    const metSaus = saus ? ` met ${saus}` : '';
-    const sausAf = saus ? ` Een lik ${saus}, en de avond is geslaagd.` : '';
-    const sausGoten = saus ? ` overgoten met ${saus}` : '';
-    const reden = redenen.length ? one(redenen) : null;
-    const redenZin = reden ? ` ${reden.charAt(0).toUpperCase()+reden.slice(1)}.` : '';
-    const wonder = multi ? [
-      `Het orakel legde ${combo} naast elkaar en knikte traag.${redenZin}${shakeBit}`,
-      `${combo}${metSaus}. Niet omdat het moet, maar omdat het klópt:${reden?` ${reden}`:' knapperig, hartig, in balans'}.${shakeBit}`,
-      `Vertrouw het orakel: ${combo} horen samen.${redenZin}${sausAf}${shakeBit}`
-    ] : [
-      `Het orakel bekeek de ${a} van alle kanten en knikte traag: knapperig, hartig, precies goed.${saus?` Met ${saus} erover wordt het pas echt af.`:''}${shakeBit}`,
-      `${a}${metSaus} is geen gok maar een klassieker. Dit bestel je met droge ogen — Karst-keurmerk.`,
-      `Vertrouw het orakel: ${a}${metSaus} hoort bij een goede vrijdagavond.${shakeBit}`
-    ];
-    const gek = [
-      `Niemand vroeg om ${combo}${metSaus}. En tóch fluistert het orakel: probeer het één keer, en je vertelt het na aan je kleinkinderen.`,
-      `${combo}${sausGoten} — wetenschappelijk twijfelachtig, frituurtechnisch legendarisch. Durf jij?${shake?` Wegspoelen met een ${shake} shake.`:''}`,
-      `Het orakel was stellig (en mogelijk licht beneveld): ${combo}${metSaus} hoort eigenlijk nergens, dus juist daarom moet het. Eén hap en je leeft op het randje.`
-    ];
-    return one(mode==='wonder'?wonder:gek);
+  /* ============================== VERHAALTJES ==============================
+     Weetjes zijn feiten uit productinformatie en snackbronnen, geen verzinsels.
+     De zinnen eromheen wisselen, zodat twee bonnen zelden hetzelfde zeggen. */
+  const WEETJES=[
+    {m:/kipcorn/,      t:['De kipcorn bestaat sinds 1986 en heeft een korst van maïspaneermeel.']},
+    {m:/loempidel/,    t:['Een loempidel is een frikandel in een loempiajasje, met een zoet sausje ertussen.']},
+    {m:/krokidel/,     t:['De krokidel is een kroket met frikandelragout, bedacht op de Frikandel Disco in Amsterdam.']},
+    {m:/berenhap/,     t:['Een berenhap is gehaktbal met uienringen aan een stokje. In sommige provincies heet hij berenklauw of spoetnik.']},
+    {m:/pikanto/,      t:['Een pikanto is een pittige frikandel, met prei, sambal en paprika.']},
+    {m:/sitostick/,    t:['Een sitostick zit vol ui.']},
+    {m:/smulrol/,      t:['Een smulrol is eigenlijk een platgedrukt pannenkoekje, gevuld met rundvlees en groente.']},
+    {m:/hete donder/,  t:['Kenners zeggen dat een hete donder nog pittiger is dan een pikanto.']},
+    {m:/vlampijp/,     t:['Een vlampijp is de XL-versie van een vlammetje.']},
+    {m:/vlammetjes/,   t:['Vlammetjes zijn gevuld met pittig gekruid varkensvlees en Spaanse peper.']},
+    {m:/boerenbrok/,   t:['Een boerenbrok is grof gehakt met soepgroente, gewikkeld in een lapje schouderkarbonade.']},
+    {m:/mexicano/,     t:['Een mexicano klinkt Mexicaans, maar is een Nederlandse uitvinding.']},
+    {m:/bamischijf/,   t:['Een bamischijf is gewoon bami, in een plak gedrukt en gepaneerd.']},
+    {m:/nasischijf/,   t:['Een nasischijf is gewoon nasi, in een plak gedrukt en gepaneerd.']}
+  ];
+  // geeft het weetje terug én over welke snack het gaat
+  function weetjeVoor(snacks){
+    const w=[];
+    snacks.forEach((s,i)=>{ const e=WEETJES.find(x=>x.m.test(s.n.toLowerCase())); if(e) e.t.forEach(t=>w.push({t,i})); });
+    return w.length ? one(w) : null;
+  }
+
+  // "Bitterballen (6)" -> "zes bitterballen", "Frikandel" -> "een frikandel"
+  const TELWOORD={3:'drie',5:'vijf',6:'zes',9:'negen',20:'twintig'};
+  function prozaNaam(n){
+    const m=n.match(/^(.*?)\s*\((\d+)(?:\s*stokjes)?\s*\)$/);
+    if(m){
+      const tal=TELWOORD[+m[2]]||m[2];
+      if(/stokjes/.test(n)) return `${tal} stokjes kipsaté`;
+      const basis=m[1].trim().toLowerCase().replace(/^kip nuggets$/,'kipnuggets').replace(/^mini loempia's$/,"mini-loempia's");
+      return `${tal} ${basis}`;
+    }
+    const vast={'Rauwkost':'rauwkost','Hamburger los':'een losse hamburger','Veg. kroket':'een vegakroket',
+                'Kwekkeboom kroket':'een Kwekkeboom-kroket'};
+    return vast[n] || 'een '+n.charAt(0).toLowerCase()+n.slice(1);
+  }
+  const lijstVan = snacks => {
+    const d=snacks.map(s=>prozaNaam(s.n));
+    return d.length<2 ? d[0] : d.slice(0,-1).join(', ')+' en '+d[d.length-1];
+  };
+  const hoofd = t => t ? t.charAt(0).toUpperCase()+t.slice(1) : t;
+
+  const SHAKE_ZIN=[
+    s=>` De ${s}shake spoelt het weg.`,
+    s=>` Met een ${s}shake om af te blussen.`,
+    s=>` En een ${s}shake als toetje.`
+  ];
+  const SAUS_ZIN=[
+    s=>` Een lik ${s} maakt het af.`,
+    s=>` Met ${s} erover wordt het pas echt wat.`,
+    s=>` ${hoofd(s)} erbij, en klaar.`
+  ];
+  const ALGEMENE_REDEN=['elk heeft zijn eigen rol op de bon','het past gewoon bij elkaar',
+                        'niets zit elkaar in de weg'];
+
+  const prozaSaus = lb => { const d=lb.split(' + '); return d.length<2 ? d[0] : d.slice(0,-1).join(', ')+' én '+d[d.length-1]; };
+  function verhaal(chosen, saus, shake, redenen, lines){
+    const lijst=lijstVan(chosen);
+    const mv=chosen.length>1;
+    // In een lijst noemen we één saus, en dan bij de snack waar hij echt op zit:
+    // de dubbele saus als die er is, anders de eerste snack met saus.
+    lines=lines||[];
+    const dubbel=lines.findIndex(l=>l.saus && l.saus.includes(' + '));
+    const ster = dubbel>=0 ? dubbel : lines.findIndex(l=>l.saus);
+    const delen=chosen.map((s,i)=>prozaNaam(s.n)+(i===ster ? ` met ${prozaSaus(lines[i].saus)}` : ''));
+    const lijstMet = delen.length<2 ? delen[0] : delen.slice(0,-1).join(', ')+' en '+delen[delen.length-1];
+    const reden=redenen.length ? one(redenen) : one(ALGEMENE_REDEN);
+    const wj=weetjeVoor(chosen), weetje=wj?wj.t:null;
+    const wz = weetje && Math.random()<0.5 ? ' '+weetje : '';
+    const sz = saus && Math.random()<0.5 ? one(SAUS_ZIN)(saus) : '';
+    const shz = shake && Math.random()<0.45 ? one(SHAKE_ZIN)(shake) : '';
+    const met = saus ? ` met ${saus}` : '';
+
+    if(mode==='wonder' && chosen.length>1){
+      const [a,b,c]=chosen.map(s=>prozaNaam(s.n));
+      return one([
+        ()=>`Het orakel legde ${lijst} naast elkaar en knikte. ${hoofd(reden)}.${wz}${shz}`,
+        ()=>`${hoofd(lijst)}. Niet omdat het moet, maar omdat het klopt: ${reden}.${sz}`,
+        ()=>`Vertrouw het orakel: ${lijst} horen bij elkaar. ${hoofd(reden)}.${wz}`,
+        ()=>`Wie ${lijst} bestelt, weet wat hij doet. ${hoofd(reden)}.${sz}${shz}`,
+        ()=>`Dit is geen toeval. ${hoofd(reden)}, en daarom: ${lijst}.${shz}`,
+        ()=>`${hoofd(lijst)} op één bon. Klinkt willekeurig, maar ${reden}.${wz}`,
+        ()=>`Het orakel draaide, twijfelde even, en koos ${lijst}. ${hoofd(reden)}.${sz}`,
+        ()=>`Er zijn bonnen die je bestelt, en bonnen die je overkomen. Deze is van de tweede soort: ${lijst}. ${hoofd(reden)}.`,
+        ()=>`Hap één: ${a}. Hap twee: ${b}.${c?` Hap drie: ${c}.`:''} ${hoofd(reden)}.${shz}`,
+        ()=> weetje ? `${weetje} Daarom vanavond: ${lijst}. ${hoofd(reden)}.` : `${hoofd(lijst)}: ${reden}.${sz}`
+      ])();
+    }
+    if(mode==='wonder'){
+      const n=prozaNaam(chosen[0].n);
+      return one([
+        ()=>`Eén snack, geen twijfel: ${n}${met}.${weetje?' '+weetje:''}${shz}`,
+        ()=>`Het orakel had maar één naam nodig: ${n}.${sz}${shz}`,
+        ()=>`${hoofd(n)}${met}. Soms is de simpelste keuze de beste.${wz}`,
+        ()=>`Vandaag geen gedoe: ${n}${met}.${weetje?' '+weetje:''}`,
+        ()=> weetje ? `${weetje} Vanavond is het jouw beurt.${sz}` : `${hoofd(n)} is geen gok maar een klassieker.${sz}${shz}`,
+        ()=>`${hoofd(n)} is geen gok maar een klassieker.${sz}${shz}`,
+        ()=>`Vertrouw het orakel: ${n}${met} hoort bij een goede avond.${shz}`,
+        ()=>`Het orakel keek je aan en had maar één snack nodig: ${n}.${sz}`
+      ])();
+    }
+    // Gek
+    // 'de rest' = alle snacks behalve die waar het weetje over gaat
+    const rest = mv && wj ? lijstVan(chosen.filter((_,i)=>i!==wj.i)) : null;
+    return one([
+      ()=>`Niemand vroeg om ${lijstMet}. En tóch fluistert het orakel: probeer het één keer.`,
+      ()=>`${hoofd(lijstMet)}. Wetenschappelijk twijfelachtig, frituurtechnisch legendarisch.`,
+      ()=>`Het orakel was stellig, en mogelijk licht beneveld: ${lijst} ${mv?'horen':'hoort'} nergens, dus juist daarom moet het.`,
+      ()=>`Dit is de bestelling waar de frituurbak nog jaren over napraat: ${lijstMet}.${shz}`,
+      ()=>`${hoofd(lijstMet)}. Bestel het hardop en kijk naar het gezicht achter de toonbank.`,
+      ()=>`Ergens in een parallel universum ${mv?'zijn':'is'} ${lijstMet} heel normaal. Vanavond ook hier.`,
+      ()=> (weetje && rest) ? `${weetje} Het orakel vond dat een goede reden om er ${rest} naast te leggen.`
+                            : `Het orakel heeft geen idee waarom, maar ${lijst} ${mv?'moeten vanavond samen in één zak':'moet vanavond mee naar huis'}.`,
+      ()=>`Het orakel heeft geen idee waarom, maar ${lijst} ${mv?'moeten vanavond samen in één zak':'moet vanavond mee naar huis'}.${shz}`
+    ])();
+  }
+
+  /* ============================ ORAKELRECEPTEN =============================
+     De wow zit niet in "kaas naast kip", maar in herkenning: een bekend gerecht
+     dat je opeens terugziet in losse snacks. Elk recept respecteert de regels
+     (nooit twee uit dezelfde familie), heeft vaste sauzen die erbij horen, en
+     eigen verhaaltjes. Een verhaaltje dat met § begint noemt een saus, en wordt
+     alleen gebruikt als precies die sauzen op de bon staan.
+     Weetjes komen uit productinformatie van de fabrikanten en de kaart van Karst. */
+  const RECEPTEN=[
+    {id:'kapsalon', naam:'Kapsalon zonder bakje',
+     snacks:[['Shoarmarol','knoflook'],['Kaassoufflé','chili'],['Rauwkost',null]],
+     verhalen:[
+      '§Shoarma, gesmolten kaas, sla en knoflooksaus. Dat is een kapsalon, alleen heeft het orakel hem uit elkaar gehaald en het bakje weggelaten.',
+      'Een kapsalon staat gewoon op de kaart bij Karst. Het orakel bouwde hem liever zelf na, uit drie losse snacks. Zelfde smaken, en jij bepaalt de volgorde.',
+      'Kijk goed naar deze bon. Er staat een kapsalon op, alleen weet hij het zelf nog niet.']},
+    {id:'cheeseburger', naam:'Cheeseburger zonder broodje',
+     snacks:[['Hamburger los','ketchup'],['Kaassoufflé','mosterd'],['Slaatje',null]],
+     verhalen:[
+      '§Vlees met ketchup, kaas met mosterd, en sla. Wat hier staat is een cheeseburger die het broodje heeft overgeslagen.',
+      'Het orakel haalde een cheeseburger uit elkaar en legde de onderdelen naast elkaar op je bon. Eet ze om de beurt, of alle drie tegelijk: dan is hij weer heel.',
+      'Een losse hamburger, een kaassoufflé en een slaatje. Zeg het hardop en je hoort het: cheeseburger.']},
+    {id:'borrelplank', naam:'Borrelplank uit de frituur',
+     snacks:[['Bitterballen (6)','mosterd'],['Kaastengels (6)','chili'],['Vlammetjes (6)','sate']],
+     verhalen:[
+      '§Bitterballen met mosterd, kaastengels met chilisaus, vlammetjes met zoete satésaus. Dat is geen bestelling meer, dat is een borrelplank. Zet hem in het midden.',
+      '§De vlammetjes zijn pittig, dus het orakel gaf ze zoete satésaus mee: zoet blust vuur. De bitterballen krijgen mosterd, zoals het hoort.',
+      'Achttien happen, drie soorten, geen afwas. Het orakel noemt dit een avondvullend programma.']},
+    {id:'rijsttafel', naam:'Rijsttafel op de hand',
+     snacks:[['Nasischijf','curry'],['Kip saté (3 stokjes)',null],["Mini loempia's (6)",'zoetzuur']],
+     verhalen:[
+      'Nasi, saté en loempia: de klassiekers van een rijsttafel, maar dan zonder schaaltjes. Het orakel heeft het Indische buffet in je hand gelegd.',
+      '§Eerst de nasischijf met curry, dan een stokje saté, dan een loempiaatje door de zoetzuursaus. Herhaal tot op.',
+      'Een rijsttafel is normaal een tafel vol schaaltjes. Deze heeft er drie, en past in een zak.']},
+    {id:'frikandelreunie', naam:'Frikandel-familiereünie',
+     snacks:[['Loempidel','chili'],['Krokidel','mosterd'],['Frikandel speciaal',null]],
+     verhalen:[
+      'Drie keer frikandel, drie keer anders: een frikandel speciaal, een loempidel in een knapperig loempiajasje, en een krokidel, een kroket met frikandelragout. Familiereünie in de frituur.',
+      'De krokidel werd bedacht op de Frikandel Disco in Amsterdam. Het orakel vond dat hij zijn neven weleens mocht ontmoeten: de loempidel en een frikandel speciaal.',
+      'Zelfde smaak, drie texturen: zacht, knapperig en romig. Dit gebeurt er als je de frikandel serieus neemt.']},
+    {id:'uienfeest', naam:'Uienfeest',
+     snacks:[['Sitostick','curry'],['Berenhap','sate'],['Frikandel curry & ui',null]],
+     verhalen:[
+      'Ui, ui en nog eens ui. De sitostick zit er vol mee, de berenhap heeft uienringen tussen het gehakt, en de frikandel krijgt hem erbovenop.',
+      'Het orakel zocht drie snacks die dezelfde geur delen. Die versterken elkaar in plaats van elkaar te overstemmen.',
+      'In sommige provincies heet een berenhap een berenklauw of een spoetnik. Maakt niet uit: met een sitostick en een frikandel met ui ernaast wordt het hoe dan ook een uienfeest.']},
+    {id:'quesadilla', naam:'Quesadilla van de frituur',
+     snacks:[['Mexicano','knoflook'],['Kaaskroket','mayo'],['Slaatje',null]],
+     verhalen:[
+      'De mexicano brandt, de kaaskroket blust, het slaatje ruimt op. Drie snacks, één plan.',
+      'Een mexicano is ondanks zijn naam een Nederlandse uitvinding. Het orakel maakte er toch iets Mexicaans van: pit, gesmolten kaas en iets fris. Bijna een quesadilla.',
+      'Pittig vlees naast smeltende kaas is de oudste truc uit de keuken. Het slaatje is er zodat je daarna nog iets proeft.']},
+    {id:'slager', naam:'De slagerstoonbank',
+     snacks:[['Boerenbrok','mosterd'],['Kalfskroket','mayo'],['Rauwkost',null]],
+     verhalen:[
+      'Een boerenbrok is grof gehakt met soepgroente, gewikkeld in een lapje schouderkarbonade. Met een kalfskroket ernaast is dit eigenlijk een bezoekje aan de slager.',
+      '§Mosterd op de boerenbrok, mayonaise op de kalfskroket, rauwkost voor het geweten.',
+      'Vlees, vlees en iets fris om af te sluiten. Het orakel houdt het vandaag eerlijk.']},
+    {id:'wereldreis', naam:'Wereldreis in drie happen',
+     snacks:[['Shoarmarol','knoflook'],['Bamischijf','sate'],['Mexicano','zigeuner']],
+     verhalen:[
+      'Midden-Oosten, Indonesië, en een mexicano die doet alsof hij uit Mexico komt. Het orakel neemt je mee op wereldreis zonder dat je Dedemsvaart uit hoeft.',
+      '§Knoflooksaus, satésaus en zigeunersaus: drie keukens, drie sauzen, één bon.',
+      'Shoarma, bami en pit. Je paspoort mag thuisblijven.']},
+    {id:'vegarijsttafel', naam:'Vega-rijsttafel',
+     snacks:[['Vegetarische bami','sate'],['Veg. kroket','mosterd'],["Mini loempia's (6)",'zoetzuur']],
+     verhalen:[
+      'Bami, loempia en een kroket, en geen gram vlees. Het orakel bewijst dat vega ook gewoon frituur is.',
+      '§Satésaus bij de bami, mosterd bij de kroket, zoetzuur bij de loempia\'s. Elk zijn eigen saus, zoals het hoort.',
+      'Een rijsttafel zonder vlees, uit de frituur. Niemand gaat iets missen.']},
+    {id:'vegakapsalon', naam:'Vega-kapsalon',
+     snacks:[['Vega frikandel','knoflook'],['Kaassoufflé','chili'],['Rauwkost',null]],
+     verhalen:[
+      '§Kaas, sla en knoflooksaus: de smaak van een kapsalon. Alleen is de shoarma vervangen door een vega frikandel, en dat merk je niet.',
+      'Een kapsalon, maar dan vega en uit elkaar gehaald. Het orakel kan het niet laten.',
+      'Vega frikandel, kaassoufflé, rauwkost. Op papier drie losse snacks, in je mond één kapsalon.']},
+    {id:'kinderfeest', naam:'Kinderfeestje voor grote mensen',
+     snacks:[['Frikandel','appelmoes'],['Kaassoufflé','ketchup'],['Kip nuggets (6)','curry']],
+     verhalen:[
+      '§Frikandel met appelmoes, kaassoufflé met ketchup, nuggets met curry. Dit bestelde je toen je acht was, en het is nog steeds goed.',
+      '§Appelmoes op een frikandel klinkt raar tot je het probeert: zoet tegen zout werkt altijd.',
+      'Het orakel nam je mee terug naar het kinderfeestje. De slingers moet je er zelf bij denken.']},
+    {id:'gasthof', naam:'Duits wegrestaurant',
+     snacks:[['Varkensschnitzel','zigeuner'],['Braadworst','mosterd'],['Rauwkost',null]],
+     verhalen:[
+      '§Schnitzel met zigeunersaus, braadworst met mosterd en rauwkost als zuurkool. Het orakel heeft een Duits wegrestaurant op je bon gezet.',
+      'Over de grens bestellen ze dit met een grote pul erbij. Hier mag het ook zonder.',
+      'Schnitzel, worst en iets van kool. Het orakel heeft vanavond Duitse les.']},
+
+    {id:'popper', naam:'Jalapeño popper',
+     snacks:[['Pikanto','joppie'],['Kaaskroket','mayo']],
+     verhalen:[
+      'Een jalapeño popper is een pepertje gevuld met roomkaas, gepaneerd en gefrituurd. Een pikanto en een kaaskroket samen is precies dat, in twee happen.',
+      'Een pikanto is een pittige frikandel met prei, sambal en paprika. De kaaskroket ernaast blust het vuur. Om en om eten.',
+      'Pit en kaas. Meer heeft een goede snack niet nodig.']},
+    {id:'koolsla', naam:'Kip met koolsla',
+     snacks:[['Halve kip','bbq'],['Rauwkost',null]],
+     verhalen:[
+      'Gefrituurde kip met koolsla: zo eten ze het in Amerika al tientallen jaren. Het orakel vond dat Dedemsvaart ook weleens mocht.',
+      '§Een halve kip met BBQ-saus en rauwkost ernaast. Vet en fris, precies in balans.',
+      'Een halve kip is een maaltijd. Met rauwkost erbij is het er zelfs een met groente.']},
+    {id:'pannenkoek', naam:'Pannenkoek met kaas',
+     snacks:[['Smulrol','curry'],['Kaassoufflé','ketchup']],
+     verhalen:[
+      'Een smulrol is eigenlijk een platgedrukt pannenkoekje, gevuld met rundvlees en groente. Met een kaassoufflé ernaast heb je het pannenkoekenhuis: pannenkoek met kaas.',
+      'Pannenkoek met vlees en een flinke plak kaas. Het orakel heeft het pannenkoekenhuis naar de frituur gehaald.',
+      'Opgerold, gepaneerd en gefrituurd: dit is de pannenkoek zoals een snackbar hem zou maken.']},
+    {id:'vuurenijs', naam:'Vuur en ijs',
+     snacks:[['Vlampijp','sate'],['Kaastengels (6)','ketchup']],
+     verhalen:[
+      'Een vlampijp is de XL-versie van een vlammetje: pittig varkensvlees met Spaanse peper. De kaastengels zijn er om te blussen.',
+      '§De vlampijp met zoete satésaus, de kaastengels met ketchup. Om en om, anders verbrand je.',
+      'Eén pittige rol, zes stukjes kaas. Het orakel weet precies wat er gaat gebeuren.']},
+    {id:'brandweer', naam:'Hete donder met brandweer',
+     snacks:[['Hete donder','joppie'],['Rauwkost',null]],
+     verhalen:[
+      'Kenners zeggen dat een hete donder nog pittiger is dan een pikanto. Het orakel gaf je rauwkost mee als brandweer.',
+      '§Hete donder met joppiesaus, en rauwkost om je mond weer koud te krijgen.',
+      'Vuur en fris. Kort, maar krachtig.']},
+    {id:'straatkraam', naam:'Aziatisch straatkraampje',
+     snacks:[['Kipcorn','zoetzuur'],['Loempia','chili']],
+     verhalen:[
+      'De kipcorn bestaat sinds 1986 en heeft een korst van maïspaneermeel. Met een loempia ernaast wordt het een Aziatisch straatkraampje.',
+      '§Kipcorn door de zoetzuursaus, loempia met chilisaus. Zoet, pittig en knapperig.',
+      'Kip en loempia: twee keer knapperig, twee keer anders.']},
+    {id:'sateavond', naam:'Saté-avond',
+     snacks:[['Berenhap','sate'],['Satékroket','mayo']],
+     verhalen:[
+      'Een berenhap komt traditioneel met pindasaus, en de satékroket heeft de saté al binnenin. Samen is het een satéavond.',
+      '§Berenhap met satésaus en een satékroket met mayonaise. Wie van pinda houdt, is vanavond klaar.',
+      'Saté aan een stokje en saté in een kroket. Het orakel heeft een duidelijke voorkeur vandaag.']},
+    {id:'zoetzout', naam:'Zoet, zout en knapperig',
+     snacks:[['Kaassoufflé','chili'],["Mini loempia's (6)",'zoetzuur']],
+     verhalen:[
+      '§Zoetzuursaus bij de loempia\'s, chilisaus bij de kaassoufflé. Zoet, zout, romig en knapperig in twee snacks.',
+      'Kaas en loempia: het klinkt als een vergissing, maar zoet naast zout-romig werkt altijd.',
+      'Vega, en toch helemaal frituur. Het orakel heeft geen vlees nodig om indruk te maken.']}
+  ];
+  const RECEPT_KANS=0.5;   // bij 2 of 3 snacks in Wonder: ongeveer de helft van de keren een recept
+
+  /* Een recept voorstellen dat past bij de instellingen, het budget en wat er
+     net al geweest is. Geen passend recept = null, dan kiest de gewone motor. */
+  function receptVoorstel(ctx, limiet){
+    if(mode!=='wonder' || nSnacks<2 || Math.random()>=RECEPT_KANS) return null;
+    const pool=snackPool(), per=Object.fromEntries(pool.map(s=>[s.n,s]));
+    const recent=(HIST.recepten||[]).filter(Boolean);   // recepten uit de laatste 12 draaien
+    const opties=[];
+    for(const r of RECEPTEN){
+      if(r.snacks.length!==nSnacks) continue;
+      if(!r.snacks.every(([n])=>per[n])) continue;                       // vega/kip-filter
+      if(kipMode==='altijd' && !r.snacks.some(([n])=>isKip(n))) continue;
+      if(recent.includes(r.id)) continue;
+      const items=r.snacks.map(([n])=>per[n]);
+      if(HIST.combos.includes(sig(items))) continue;
+      const sauzen=r.snacks.map(([n,id])=>{
+        if(!krijgtSaus(n)) return null;
+        if(id && sausMag(id)) return alsSaus([id]);
+        const w=wonderSaus(n); return w ? alsSaus([w]) : null;          // uitgezette saus: netjes vervangen
+      });
+      const patatSaus = ctx.patat ? kiesPatatSaus() : null;
+      let t=items.reduce((a,s,i)=>a+s.p+(sauzen[i]?sauzen[i].prijs:0),0);
+      if(ctx.patat) t+=patatPrijs+(patatSaus?patatSaus.prijs:0);
+      if(ctx.shake) t+=shakePrijs;
+      t=+t.toFixed(2);
+      if(limiet!=null && t>limiet+0.001) continue;
+      const zoalsBedoeld=r.snacks.every(([,id],i)=> id===null || (sauzen[i] && sauzen[i].label===sausLabel(id)));
+      opties.push({items, sauzen, patatSaus, kosten:t, redenen:[], recept:r, zoalsBedoeld});
+    }
+    if(!opties.length) return null;
+    // eerst recepten die je nog nooit (of het langst niet) hebt gehad
+    const lang=HIST.receptenLang||[];
+    const ouderdom = o => { const i=lang.indexOf(o.recept.id); return i<0 ? 999 : i; };
+    const max=Math.max(...opties.map(ouderdom));
+    return one(opties.filter(o=>ouderdom(o)===max));
+  }
+  function receptVerhaal(r, zoalsBedoeld, shakeSmaak){
+    let opties=r.verhalen.filter(t=>zoalsBedoeld || !t.startsWith('§'));
+    if(!opties.length) opties=r.verhalen.filter(t=>!t.startsWith('§'));
+    let t=one(opties).replace(/^§/,'');
+    if(shakeSmaak && Math.random()<0.4) t+=one(SHAKE_ZIN)(shakeSmaak);
+    return t;
   }
 
   // Bouwt de uitkomst: snacks + sauzen + patat + shake + verhaal.
@@ -1304,7 +1620,7 @@
       patat: document.getElementById('t-patat').classList.contains('on'),
       shake: document.getElementById('t-shake').classList.contains('on')
     };
-    const keuze=kiesCombinatie(ctx, limiet);
+    const keuze=receptVoorstel(ctx, limiet) || kiesCombinatie(ctx, limiet);
     const chosen=keuze.items;
 
     let tot=0; const lines=[]; const reelItems=[]; const snackNamen=[];
@@ -1326,9 +1642,12 @@
       reelItems.push({emoji:'🥤', label:smaak});
     }
     const repSaus = (lines.find(l=>l.saus)||{}).saus || (patat&&patat.saus) || null;
-    const story = verhaal(chosen, repSaus, shake?shake.smaak:null, keuze.redenen||[]);
+    const story = keuze.recept
+      ? receptVerhaal(keuze.recept, keuze.zoalsBedoeld, shake?shake.smaak:null)
+      : verhaal(chosen, repSaus, shake?shake.smaak:null, keuze.redenen||[], lines);
     tot=+tot.toFixed(2);
-    return {chosen, lines, patat, shake, tot, story, reelItems, snackNamen, modus:mode};
+    return {chosen, lines, patat, shake, tot, story, reelItems, snackNamen, modus:mode,
+            recept: keuze.recept ? keuze.recept.naam : null, receptId: keuze.recept ? keuze.recept.id : null};
   }
 
   /* =========================== SLOT-ROLLEN ================================= */
@@ -1393,6 +1712,9 @@
     if(order.patat){ addItem(1,order.patat.naam,order.patat.prijs,false); if(order.patat.saus) addSaus(order.patat.saus, order.patat.sausPrijs); }
     if(order.shake){ addItem(1,`${order.shake.naam} ${order.shake.smaak}`,order.shake.prijs,false); }
 
+    if(order.recept){
+      const rc=document.createElement('div'); rc.className='recept'; rc.textContent='🔮 Orakelrecept · '+order.recept; box.appendChild(rc);
+    }
     const st=document.createElement('div'); st.className='story'; st.textContent='“'+order.story+'”'; box.appendChild(st);
     document.getElementById('totaal').textContent=eur(order.tot);
 
@@ -1408,7 +1730,7 @@
     bonTekst=kopie.join('\n');
     bonVol=`🍟 HET SNACKORAKEL — Snackbar Karst, Dedemsvaart\n(${mode==='wonder'?'Wonder ✨':'Gek 🤪'})\n`+
       `--------------------------------\n`+regels.join('\n')+`\n`+
-      `--------------------------------\nTotaal  ${eur(order.tot)}\n\n“${order.story}”`;
+      `--------------------------------\nTotaal  ${eur(order.tot)}\n\n${order.recept?`Orakelrecept: ${order.recept}\n`:''}“${order.story}”`;
   }
 
   /* Budget als plafond: behoud de keuzes, maar her-genereer tot 't binnen budget past.
@@ -1421,7 +1743,7 @@
   function kiesOrder(){
     const order=maakOrder(budgetOn?budget:null);
     if(budgetOn && order.tot>budget+0.001){ order.overBudget=true; order.story=one(KRAP)(budget); }
-    onthoud(order.chosen);
+    onthoud(order.chosen, order.receptId);
     return order;
   }
 
