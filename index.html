@@ -41,17 +41,19 @@
     text-shadow:3px 3px 0 var(--rood);
   }
   .sign .sub{color:var(--creme); font-family:'Bree Serif',serif; font-size:14px; letter-spacing:2px; text-transform:uppercase}
-  .maand{display:none; margin:12px auto 0; max-width:300px; background:var(--geel); color:var(--bruin);
-    border-radius:10px; padding:6px 12px 7px; font-size:12px; line-height:1.35; box-shadow:0 3px 0 rgba(0,0,0,.3)}
+  /* Snack van de maand: een bordje dat aan twee kettinkjes onder de lichtbak hangt */
+  .maand{display:none; position:relative; margin:22px auto 0; max-width:270px; background:var(--geel); color:var(--bruin);
+    border:3px solid var(--bruin); outline:2px solid var(--geel); border-radius:8px; padding:5px 12px 7px;
+    font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; line-height:1.3;
+    box-shadow:0 4px 0 rgba(0,0,0,.35); transform:rotate(-1.2deg)}
   .maand.show{display:block}
+  .maand::before, .maand::after{content:''; position:absolute; top:-17px; width:2px; height:14px;
+    background:repeating-linear-gradient(var(--geel) 0 3px, transparent 3px 5px)}
+  .maand::before{left:18%} .maand::after{right:18%}
+  .maand b{display:block; font-family:'Anton',sans-serif; font-weight:400; font-size:19px; letter-spacing:.5px; margin-top:1px}
+  .maand .prijs{display:inline-block; margin-top:3px; background:var(--rood); color:var(--wit); border-radius:6px;
+    padding:1px 8px; font-family:'Anton',sans-serif; font-weight:400; font-size:15px; letter-spacing:.5px}
   .filterchip{font-size:11px; font-weight:800; color:var(--rood); margin-left:8px; letter-spacing:.3px}
-  .maand{cursor:pointer; -webkit-tap-highlight-color:transparent; transition:transform .1s, opacity .2s}
-  .maand:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.3)}
-  .maand.altijd{outline:3px solid var(--wit); outline-offset:2px}
-  .maand.nooit{opacity:.55}
-  .maand.nooit b{text-decoration:line-through}
-  .maand small{display:block; font-size:11px; margin-top:2px; opacity:.8}
-  .maand b{display:block; font-family:'Anton',sans-serif; font-weight:400; font-size:17px; text-transform:uppercase; letter-spacing:.5px}
   .bulbs{position:absolute; top:-4px; left:0; right:0; display:flex; justify-content:space-around; padding:0 14px}
   .bulb{width:9px; height:9px; border-radius:50%; background:var(--geel); margin-top:-4px; box-shadow:0 0 6px var(--geel); animation:flick 1.2s infinite}
   .bulb:nth-child(odd){animation-delay:.6s}
@@ -91,9 +93,12 @@
   }
   .seg button.on{background:var(--rood); color:var(--wit); border-color:var(--rood-diep)}
   .toggle{width:62px; height:34px; border-radius:20px; border:3px solid var(--bruin); background:var(--wit); position:relative; cursor:pointer; flex:none}
-  .toggle .knob{position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%; background:var(--bruin); transition:left .12s}
+  /* Het bolletje van de schakelaar is het icoon zelf: uit = grijs links, aan = in kleur rechts */
+  .toggle .knob{position:absolute; top:1px; left:1px; width:26px; height:26px; border-radius:50%; background:var(--wit);
+    border:2px solid var(--bruin); box-sizing:border-box; display:flex; align-items:center; justify-content:center;
+    font-size:15px; line-height:1; transition:left .15s, transform .15s; filter:grayscale(1); opacity:.75}
   .toggle.on{background:var(--groen); border-color:#2c6b3b}
-  .toggle.on .knob{left:32px; background:var(--wit)}
+  .toggle.on .knob{left:31px; filter:none; opacity:1; border-color:#2c6b3b; transform:rotate(-12deg)}
   .subrow{display:none; padding:4px 0 12px; border-bottom:2px dashed #d9c3a3}
   .subrow.show{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px}
   .subrow .sl{font-size:12px; font-weight:800; color:#8a7560; text-transform:uppercase; letter-spacing:.5px}
@@ -142,7 +147,7 @@
   @keyframes thunk{0%{transform:translateY(-5px)}60%{transform:translateY(3px)}100%{transform:translateY(0)}}
   .reel-label{margin-top:6px; font-size:9.5px; font-weight:800; color:var(--creme); text-transform:uppercase;
     text-align:center; line-height:1.15; min-height:24px; letter-spacing:.2px; opacity:0;
-    width:100%; padding:0 1px; word-break:break-word; overflow-wrap:anywhere}
+    width:100%; padding:0 1px; overflow-wrap:break-word; -webkit-hyphens:auto; hyphens:auto}
   .reel.locked .reel-label{opacity:1}
 
   .bon{background:var(--wit); margin-top:22px; padding:18px 20px 26px; position:relative; font-family:'Inter',sans-serif;
@@ -200,7 +205,9 @@
   /* ---- saus-chips (compacter) ---- */
   .chipwrap{flex-basis:100%; width:100%}
   .chipwrap.dicht{display:none}
-  .sausrij{flex-basis:100%; width:100%; display:flex; align-items:center; justify-content:space-between; cursor:pointer; padding:6px 0 2px}
+  .meer{display:none; border-top:2px dashed #d9c3a3}
+  .meer.show{display:block}
+  .sausrij{cursor:pointer}
   .sausSum{font-size:12px; font-weight:700; color:#8a7560}
   .chips{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px}
   .chip{font-size:11.5px; font-weight:700; padding:5px 9px; border-radius:999px; line-height:1.1; cursor:pointer;
@@ -286,7 +293,7 @@
     <div class="friet">🍟</div>
     <h1>Het<br>Snackorakel</h1>
     <div class="sub">Karst · Dedemsvaart</div>
-    <div class="maand" id="maand" role="button" tabindex="0" aria-live="polite" onclick="tikMaand()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();tikMaand();}"></div>
+    <div class="maand" id="maand" aria-live="polite"></div>
   </div>
 
   <button class="install-btn" id="installBtn" onclick="doInstall()">📲 Installeer als app</button>
@@ -306,7 +313,7 @@
     <div class="row">
       <span class="lbl">Snacks</span>
       <div class="seg" id="seg-snacks">
-        <button class="on" data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button>
+        <button class="on" data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button>
       </div>
     </div>
 
@@ -319,7 +326,7 @@
 
     <div class="row">
       <span class="lbl">Patat erbij</span>
-      <div class="toggle" id="t-patat" onclick="togglePatat()"><div class="knob"></div></div>
+      <div class="toggle" id="t-patat" onclick="togglePatat()"><div class="knob">🍟</div></div>
     </div>
     <div class="subrow" id="sub-patat">
       <span class="sl">Grootte</span>
@@ -331,7 +338,7 @@
 
     <div class="row">
       <span class="lbl">Milkshake</span>
-      <div class="toggle on" id="t-shake" onclick="toggleShake()"><div class="knob"></div></div>
+      <div class="toggle on" id="t-shake" onclick="toggleShake()"><div class="knob">🥤</div></div>
     </div>
     <div class="subrow show" id="sub-shake">
       <span class="sl">Grootte</span>
@@ -344,7 +351,7 @@
 
     <div class="row last">
       <span class="lbl">Budget</span>
-      <div class="toggle" id="t-budget" onclick="toggleBudget()"><div class="knob"></div></div>
+      <div class="toggle" id="t-budget" onclick="toggleBudget()"><div class="knob">💶</div></div>
     </div>
     <div class="subrow" id="sub-budget" style="border-bottom:none">
       <span class="sl">Max</span>
@@ -359,21 +366,23 @@
       <span class="lbl">⚙️ Meer opties<span class="filterchip" id="kaas-chip" hidden>🚫🧀 zonder kaas</span></span>
       <span id="meer-caret" style="font-family:'Anton',sans-serif; font-size:15px">▾</span>
     </div>
-    <div class="subrow" id="sub-meer" style="border-bottom:none">
-      <span class="sl">Kipsnacks</span>
-      <div class="seg" id="seg-kip">
-        <button class="on" data-v="mag">Mag</button><button data-v="altijd">Altijd</button><button data-v="geen">Geen</button>
+    <div class="meer" id="sub-meer">
+      <div class="row">
+        <span class="lbl">Kipsnacks</span>
+        <div class="seg" id="seg-kip">
+          <button class="on" data-v="mag">Mag</button><button data-v="altijd">Altijd</button><button data-v="geen">Geen</button>
+        </div>
       </div>
-      <span class="sl">🧀 Kaas</span>
-      <div class="seg" id="seg-kaas">
-        <button class="on" data-v="mag">Mag</button><button data-v="geen">Geen kaas</button>
+      <div class="row">
+        <span class="lbl">Kaas</span>
+        <div class="toggle on" id="t-kaas" onclick="toggleKaas()" role="switch" aria-label="Kaas mag op de bon"><div class="knob">🧀</div></div>
       </div>
-      <span class="sl maandrij" style="display:none">Maandsnack</span>
-      <div class="seg maandrij" id="seg-maand" style="display:none">
-        <button class="on" data-v="soms">Soms</button><button data-v="altijd">Altijd</button><button data-v="nooit">Uit</button>
+      <div class="row maandrij">
+        <span class="lbl">Snack v/d maand</span>
+        <div class="toggle on" id="t-maand" onclick="toggleMaand()" role="switch" aria-label="Snack van de maand mag op de bon"><div class="knob">⭐</div></div>
       </div>
-      <div class="sausrij" onclick="toggleSauzen()">
-        <span class="sl">Sauzen</span>
+      <div class="row last sausrij" onclick="toggleSauzen()">
+        <span class="lbl">Sauzen</span>
         <span class="sausSum" id="saus-sum">alles aan ▾</span>
       </div>
       <div class="chipwrap dicht" id="sub-sauzen">
@@ -573,8 +582,8 @@
   // Een aanbieding met kaas in de omschrijving telt ook mee (s.kaas).
   const isKaas = s => !!s.kaas || /kaas|cheese|tengel|souffl/i.test(s.n);
   const MAAND_KEUZE_KEY='snackorakel_maandkeuze_v1';
-  let maandMode="soms"; // soms = af en toe erbij, altijd = elke draai, nooit = komt niet op de bon
-  try{ const v=localStorage.getItem(MAAND_KEUZE_KEY); if(['soms','altijd','nooit'].includes(v)) maandMode=v; }catch(e){}
+  let maandMode="soms"; // soms = af en toe erbij (schakelaar aan), nooit = komt niet op de bon (uit)
+  try{ if(localStorage.getItem(MAAND_KEUZE_KEY)==='nooit') maandMode='nooit'; }catch(e){}   // oud 'altijd' telt als aan
   const SAUSKEY='snackorakel_sausuit_v1';
   let sausUit=new Set();   // sauzen die de gebruiker nooit wil zien
   try{ const raw=localStorage.getItem(SAUSKEY); if(raw) sausUit=new Set(JSON.parse(raw)); }catch(e){}
@@ -611,18 +620,25 @@
   }
   segPick('seg-vega', b=>vegaMode=b.dataset.v);
   segPick('seg-kip', b=>kipMode=b.dataset.v);
-  segPick('seg-maand', b=>zetMaandKeuze(b.dataset.v));
-  segPick('seg-kaas', b=>zetKaas(b.dataset.v));
-  function zetKaas(v){
-    kaasMode = v==='geen' ? 'geen' : 'mag';
+  // Schakelaars in Meer opties: aan = mag op de bon, uit = nooit
+  function zetSchakelaar(id, aan){ const t=document.getElementById(id); t.classList.toggle('on', aan); t.setAttribute('aria-checked', aan?'true':'false'); }
+  function toggleKaas(){
+    if(spinning) return;
+    kaasMode = kaasMode==='geen' ? 'mag' : 'geen';
     try{ localStorage.setItem(KAAS_KEY, kaasMode); }catch(e){}
     toonKaas(); updateBudgetWarning();
   }
   function toonKaas(){
-    document.querySelectorAll('#seg-kaas button').forEach(b=>b.classList.toggle('on', b.dataset.v===kaasMode));
+    zetSchakelaar('t-kaas', kaasMode!=='geen');
     document.getElementById('kaas-chip').hidden = kaasMode!=='geen';
   }
   toonKaas();
+  function toggleMaand(){
+    if(spinning) return;
+    maandMode = maandMode==='nooit' ? 'soms' : 'nooit';
+    try{ localStorage.setItem(MAAND_KEUZE_KEY, maandMode); }catch(e){}
+    toonMaand(); updateBudgetWarning();
+  }
   segPick('seg-snacks', b=>nSnacks=+b.dataset.v);
   segPick('seg-patat', b=>{patatSize=b.dataset.v; patatPrijs=+b.dataset.p;});
   segPick('seg-shake', b=>{shakeSize=b.dataset.v; shakePrijs=+b.dataset.p;});
@@ -739,9 +755,9 @@
   /* ===== Snack van de maand =====
      Karst zet z'n tijdelijke aanbieding in Jamezz onder 'Aanbieding' (en op de site onder
      /Aanbieding). De Worker leest die live uit; lukt dat niet, dan geldt de laatst bekende,
-     en anders wat er bij de laatste menucheck stond. In Wonder en Gek komt hij af en toe
-     gegarandeerd op de bon ('soms'), elke draai ('altijd', ook via een tik op de balk) of
-     nooit ('nooit', bijvoorbeeld bij een allergie). */
+     en anders wat er bij de laatste menucheck stond. Bovenin hangt hij als bordje; in Wonder
+     en Gek komt hij af en toe gegarandeerd op de bon, tenzij de schakelaar in Meer opties
+     uit staat (bijvoorbeeld bij een allergie). */
   const MAAND_VAST={naam:'Garnalen kroket', prijs:1.60, saus:true};   // Jamezz, 1 oktober 2026
   const MAAND_KEY='snackorakel_maand_v1';
   const MAAND_KANS=0.3;
@@ -764,32 +780,16 @@
     }
     toonMaand();
   }
-  const MAAND_HINT={soms:'Tik om hem elke draai erbij te krijgen',
-                    altijd:'✓ Elke draai erbij · tik voor af en toe',
-                    nooit:'Staat uit · tik om hem elke draai erbij te krijgen'};
+  // Het bordje bovenin is alleen informatie; aan/uit zit in Meer opties.
   function toonMaand(){
     const el=document.getElementById('maand'); if(!el) return;
     document.querySelectorAll('.maandrij').forEach(x=>x.style.display=MAAND?'':'none');
-    document.querySelectorAll('#seg-maand button').forEach(b=>b.classList.toggle('on', b.dataset.v===maandMode));
-    if(!MAAND){ el.classList.remove('show','altijd','nooit'); el.textContent=''; return; }
-    el.innerHTML=`⭐ Snack van de maand <b></b><small></small>`;
-    el.querySelector('b').textContent=`${MAAND.n} · ${eur(MAAND.p)}`;
-    el.querySelector('small').textContent=MAAND_HINT[maandMode];
-    el.setAttribute('aria-pressed', maandMode==='altijd' ? 'true' : 'false');
-    el.classList.toggle('altijd', maandMode==='altijd');
-    el.classList.toggle('nooit', maandMode==='nooit');
+    if(document.getElementById('t-maand')) zetSchakelaar('t-maand', maandMode!=='nooit');
+    if(!MAAND){ el.classList.remove('show'); el.textContent=''; return; }
+    el.innerHTML=`⭐ Snack van de maand ⭐<b></b><span class="prijs"></span>`;
+    el.querySelector('b').textContent=MAAND.n;
+    el.querySelector('.prijs').textContent=eur(MAAND.p);
     el.classList.add('show');
-  }
-  function zetMaandKeuze(v){
-    maandMode=v;
-    try{ localStorage.setItem(MAAND_KEUZE_KEY, v); }catch(e){}
-    toonMaand(); updateBudgetWarning();
-  }
-  // Tikken op de balk: af en toe <-> elke draai (vanuit 'nooit' ook naar elke draai)
-  function tikMaand(){
-    if(spinning || !MAAND) return;
-    zetMaandKeuze(maandMode==='altijd' ? 'soms' : 'altijd');
-    if(!muted) blip(maandMode==='altijd' ? 990 : 660, 0.09, 'triangle', 0.12);
   }
   function laadMaand(){
     let start=MAAND_VAST;
@@ -1488,7 +1488,7 @@
      (sauzen kosten bij Karst niet allemaal hetzelfde). */
   function prijsBon(items, ctx){
     // Gek: hooguit één dubbele saus, en alleen op een bon met drie snacks
-    const combiOp = (mode==='gek' && items.length===3) ? (Math.random()*3|0) : -1;
+    const combiOp = (mode==='gek' && items.length>=3) ? (Math.random()*items.length|0) : -1;
     const sauzen = items.map((s,i)=>kiesSaus(s.n, i===combiOp));
     const patatSaus = ctx.patat ? kiesPatatSaus() : null;
     let t = items.reduce((a,s,i)=>a+s.p+(sauzen[i]?sauzen[i].prijs:0),0);
@@ -1604,7 +1604,7 @@
     const met = saus ? ` met ${saus}` : '';
 
     if(mode==='wonder' && chosen.length>1){
-      const [a,b,c]=chosen.map(s=>prozaNaam(s.n));
+      const [a,b,c,d]=chosen.map(s=>prozaNaam(s.n));
       return one([
         ()=>`Het orakel legde ${lijst} naast elkaar en knikte. ${hoofd(reden)}.${wz}${shz}`,
         ()=>`${hoofd(lijst)}. Niet omdat het moet, maar omdat het klopt: ${reden}.${sz}`,
@@ -1614,7 +1614,7 @@
         ()=>`${hoofd(lijst)} op één bon. Klinkt willekeurig, maar ${reden}.${wz}`,
         ()=>`Het orakel draaide, twijfelde even, en koos ${lijst}. ${hoofd(reden)}.${sz}`,
         ()=>`Er zijn bonnen die je bestelt, en bonnen die je overkomen. Deze is van de tweede soort: ${lijst}. ${hoofd(reden)}.`,
-        ()=>`Hap één: ${a}. Hap twee: ${b}.${c?` Hap drie: ${c}.`:''} ${hoofd(reden)}.${shz}`,
+        ()=>`Hap één: ${a}. Hap twee: ${b}.${c?` Hap drie: ${c}.`:''}${d?` Hap vier: ${d}.`:''} ${hoofd(reden)}.${shz}`,
         ()=> weetje ? `${weetje} Daarom vanavond: ${lijst}. ${hoofd(reden)}.` : `${hoofd(lijst)}: ${reden}.${sz}`
       ])();
     }

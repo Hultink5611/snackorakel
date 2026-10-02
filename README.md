@@ -13,8 +13,10 @@ uit — als kassabon, met een mini-verhaaltje.
   met sauzen die nergens op slaan maar die je online bij Karst wél gewoon kunt aanklikken.
 - **Sauzen aan/uit** — klik weg wat je nooit wilt; samengestelde sauzen vallen automatisch mee af
   (satésaus uit ⇒ ook oorlog eruit).
-- Slot-machine met geluid (mute-knop), 1–3 snacks, vega-filter, kipfilter, patat, milkshake en een budget-plafond.
-- **Geen kaas** — onder *Meer opties*: kaaskroket, kaassoufflé en kaastengels (volgens de kaart
+- Alle opties staan per groep op één regel; het bolletje van elke schakelaar is het icoon zelf
+  (🍟 patat, 🥤 milkshake, 💶 budget, 🧀 kaas, ⭐ snack van de maand): grijs = uit, kleur = aan.
+- Slot-machine met geluid (mute-knop), 1–4 snacks, vega-filter, kipfilter, patat, milkshake en een budget-plafond.
+- **Kaas aan/uit** — schakelaar onder *Meer opties*; uit = kaaskroket, kaassoufflé en kaastengels (volgens de kaart
   van Karst de snacks met kaas) komen dan nooit op de bon. Wordt onthouden; bovenin *Meer opties*
   staat dan 🚫🧀 zodat je ziet dat het aan staat.
 - **De Frituurkluis** — bewaar een spin, geef elke snack 1 tot 5 frietjes, gooi spins of
@@ -28,9 +30,9 @@ uit — als kassabon, met een mini-verhaaltje.
   het verhaaltje en een link om zelf te draaien. Op een computer gaat het naar het klembord.
 - Kassabon kopiëren (alleen de snacks).
 - **Snack van de maand** — de tijdelijke aanbieding van Karst (nu de garnalenkroket voor €1,60)
-  staat bovenin, en komt in Wonder én Gek op de bon, met een sterretje en een zinnetje in het
-  verhaal. Onder *Meer opties* kies je *Soms* (ongeveer 3 op de 10 draaien), *Altijd* of *Uit*
-  (bijvoorbeeld bij een allergie); een tik op de balk zet hem op *Altijd* en weer terug. De Worker leest hem live uit de categorie 'Aanbieding' in
+  hangt bovenin als bordje, en komt in Wonder én Gek in ongeveer 3 op de 10 draaien op de bon,
+  met een sterretje en een zinnetje in het verhaal. Met de schakelaar onder *Meer opties* zet je
+  hem uit (bijvoorbeeld bij een allergie). De Worker leest hem live uit de categorie 'Aanbieding' in
   Jamezz (`/aanbieding`); lukt dat niet, dan geldt de laatst bekende.
 
 ## Hoe de combinatie tot stand komt
