@@ -16,9 +16,11 @@ uit — als kassabon, met een mini-verhaaltje.
 - Alle opties staan per groep op één regel; het bolletje van elke schakelaar is het icoon zelf
   (🍟 patat, 🥤 milkshake, 💶 budget, 🧀 kaas, ⭐ snack van de maand): grijs = uit, kleur = aan.
 - Slot-machine met geluid (mute-knop), 1–4 snacks, vega-filter, kipfilter, patat, milkshake en een budget-plafond.
-- **Kaas aan/uit** — schakelaar onder *Meer opties*; uit = kaaskroket, kaassoufflé en kaastengels (volgens de kaart
-  van Karst de snacks met kaas) komen dan nooit op de bon. Wordt onthouden; bovenin *Meer opties*
-  staat dan 🚫🧀 zodat je ziet dat het aan staat.
+- **Kaas aan/uit** — schakelaar direct onder Vega; uit = kaaskroket, kaassoufflé en kaastengels
+  (volgens de kaart van Karst de snacks met kaas) komen dan nooit op de bon. Wordt onthouden.
+- **Volgorde van de opties** volgt hoe je een bestelling bedenkt: hoeveel snacks → wat mag erin
+  (vega, kaas) → bonus (snack van de maand) → erbij (patat, milkshake) → geld (budget) →
+  fijnafstelling onder *Meer opties* (kipsnacks, sauzen).
 - **De Frituurkluis** — bewaar een spin, geef elke snack 1 tot 5 frietjes, gooi spins of
   snacks weg en kopieer een oude bestelling. De ranglijst telt snack én saus als één
   combinatie. Per naam een eigen plank, dus een gedeelde telefoon kan.
@@ -31,7 +33,7 @@ uit — als kassabon, met een mini-verhaaltje.
 - Kassabon kopiëren (alleen de snacks).
 - **Snack van de maand** — de tijdelijke aanbieding van Karst (nu de garnalenkroket voor €1,60)
   hangt bovenin als bordje, en komt in Wonder én Gek in ongeveer 3 op de 10 draaien op de bon,
-  met een sterretje en een zinnetje in het verhaal. Met de schakelaar onder *Meer opties* zet je
+  met een sterretje en een zinnetje in het verhaal. Met de ⭐-schakelaar bij de opties zet je
   hem uit (bijvoorbeeld bij een allergie). De Worker leest hem live uit de categorie 'Aanbieding' in
   Jamezz (`/aanbieding`); lukt dat niet, dan geldt de laatst bekende.
 
