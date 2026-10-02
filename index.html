@@ -219,6 +219,10 @@
   .kluisknop{display:block; width:100%; margin-top:12px; font-family:'Anton',sans-serif; text-transform:uppercase;
     letter-spacing:.5px; font-size:15px; cursor:pointer; color:var(--geel); background:rgba(0,0,0,.28);
     border:3px solid var(--geel); border-radius:12px; padding:10px}
+  .knoprij{display:flex; gap:10px}
+  .knoprij .kluisknop{flex:1.6; min-width:0; font-size:14px; padding:10px 6px}
+  .knoprij .deelapp{flex:1; background:var(--geel); color:var(--bruin)}
+  .kluisknop:active{transform:translateY(2px)}
   .kluis{position:fixed; inset:0; background:var(--rood); background-image:radial-gradient(var(--rood-diep) 1.5px, transparent 1.5px);
     background-size:22px 22px; display:none; z-index:70; overflow-y:auto; padding:18px 14px 40px}
   .kluis.show{display:block}
@@ -285,7 +289,10 @@
 
   <button class="install-btn" id="installBtn" onclick="doInstall()">📲 Installeer als app</button>
 
-  <button class="kluisknop" id="kluisBtn" onclick="toonKluis()">🔒 Mijn frituurkluis</button>
+  <div class="knoprij">
+    <button class="kluisknop" id="kluisBtn" onclick="toonKluis()">🔒 Frituurkluis</button>
+    <button class="kluisknop deelapp" onclick="deelApp()">📤 Deel app</button>
+  </div>
 
   <div class="modes">
     <div class="mode on" data-mode="wonder" onclick="setMode(this)">
@@ -925,7 +932,7 @@
   function kluisKnopBij(){
     const b=document.getElementById('kluisBtn'); if(!b) return;
     const n=leesKluis().length;
-    b.textContent = n ? `🔒 Mijn frituurkluis (${n})` : '🔒 Mijn frituurkluis';
+    b.textContent = n ? `🔒 Frituurkluis (${n})` : '🔒 Frituurkluis';
   }
 
   let laatsteOrder=null;   // wat er nu op de bon staat, om te kunnen bewaren
@@ -2105,6 +2112,15 @@
       catch(e){ if(e && e.name==='AbortError') return; }
     }
     await naarKlembord(bonDeel, 'Gekopieerd, plak het in je appgroep 📤');
+  }
+  // Deel de app zelf: uitnodigen om ook te draaien
+  async function deelApp(){
+    const tekst=`🔮 Weet je niet wat je bij Snackbar Karst moet halen? Laat Het Snackorakel het kiezen! 🍟\n${APP_URL}`;
+    if(navigator.share){
+      try{ await navigator.share({title:'Het Snackorakel', text:tekst}); return; }
+      catch(e){ if(e && e.name==='AbortError') return; }
+    }
+    await naarKlembord(tekst, 'Link gekopieerd, stuur hem door 📤');
   }
   async function naarKlembord(txt, melding){
     try{ await navigator.clipboard.writeText(txt); toast(melding); }
