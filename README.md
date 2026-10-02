@@ -19,6 +19,8 @@ uit — als kassabon, met een mini-verhaaltje.
   combinatie. Per naam een eigen plank, dus een gedeelde telefoon kan.
 - **Wie draait er** — naam bij het eerste bezoek; elke draai gaat naar een Cloudflare
   Worker + D1 (`worker/`). Meekijken met `?stats` achter de URL.
+- **Deel je bon** — opent het deelmenu van je telefoon (WhatsApp, Berichten, …) met de bon,
+  het verhaaltje en een link om zelf te draaien. Op een computer gaat het naar het klembord.
 - Kassabon kopiëren (alleen de snacks).
 - **Snack van de maand** — de tijdelijke aanbieding van Karst (nu de garnalenkroket voor €1,60)
   staat bovenin, en komt in Wonder én Gek op de bon, met een sterretje en een zinnetje in het

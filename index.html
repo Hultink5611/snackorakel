@@ -171,6 +171,7 @@
     padding:9px 6px; box-shadow:0 3px 0 var(--bruin); transition:transform .06s; line-height:1.1;
   }
   .actions + .actions{margin-top:10px}
+  .actions button.deel{background:var(--geel); font-size:16px; padding:12px 6px}
   .actions button:active{transform:translateY(3px); box-shadow:0 0 0 var(--bruin)}
   .placeholder{margin-top:22px; text-align:center; color:var(--creme); font-family:'Bree Serif',serif; font-size:14px; opacity:.85}
   .tag{font-size:10px; background:var(--groen); color:#fff; padding:1px 6px; border-radius:6px; margin-left:6px; vertical-align:1px; font-weight:600}
@@ -399,6 +400,9 @@
       <button onclick="bewaarInKluis()">🔒 Bewaar in kluis</button>
     </div>
     <div class="actions">
+      <button class="deel" onclick="deelMetVrienden()">📤 Deel je bon</button>
+    </div>
+    <div class="actions">
       <button onclick="deelBon('vol')">📋 Kopieer bon</button>
       <button onclick="deelBon('tekst')">📝 Kopieer als tekst</button>
     </div>
@@ -548,7 +552,7 @@
 
   /* =========================== STATE & UI ================================== */
   let mode="wonder", nSnacks=1, patatSize="klein", patatPrijs=2.50, shakeSize="klein", shakePrijs=3.00;
-  let spinning=false, muted=false, bonTekst="", bonVol="";
+  let spinning=false, muted=false, bonTekst="", bonVol="", bonDeel="";
   let budgetOn=false, budget=10;
   let vegaMode="alles"; // alles = vlees + vega, geen = geen vega, alleen = alleen vega
   let kipMode="mag";    // mag = willekeurig, altijd = gegarandeerd ≥1 kip, geen = geen kip
@@ -2042,7 +2046,18 @@
     bonVol=`🍟 HET SNACKORAKEL — Snackbar Karst, Dedemsvaart\n(${mode==='wonder'?'Wonder ✨':'Gek 🤪'})\n`+
       `--------------------------------\n`+regels.join('\n')+`\n`+
       `--------------------------------\nTotaal  ${eur(order.tot)}\n\n${order.recept?`Orakelrecept: ${order.recept}\n`:''}“${order.story}”`;
+    //  - bonDeel  = kort en vrolijk, voor WhatsApp en co, met een link om zelf te draaien
+    const deelRegels=order.lines.map(l=>`• ${l.naam}${l.maand?' ⭐':''}${l.saus?` met ${l.saus}`:''}`);
+    if(order.patat) deelRegels.push(`• ${order.patat.naam}${order.patat.saus?` met ${order.patat.saus}`:''}`);
+    if(order.shake) deelRegels.push(`• ${order.shake.naam} ${order.shake.smaak}`);
+    const wie = naam ? `${naam} liet` : 'Ik liet';
+    bonDeel=`🔮 ${wie} Het Snackorakel draaien (${mode==='wonder'?'Wonder ✨':'Gek 🤪'}) en kreeg bij Snackbar Karst:\n`+
+      deelRegels.join('\n')+`\nTotaal ${eur(order.tot)}`+
+      (order.recept?`\n\nOrakelrecept: ${order.recept}`:'')+
+      `\n\n“${order.story}”\n\nDurf jij? 🍟 ${APP_URL}`;
   }
+  // Waar de app woont: de echte adresbalk, en op een lokaal bestand de publieke site
+  const APP_URL = /^https?:/.test(location.protocol) ? location.origin+location.pathname : 'https://hultink5611.github.io/snackorakel/';
 
   /* Budget als plafond: behoud de keuzes, maar her-genereer tot 't binnen budget past.
      Lukt het niet, dan de goedkoopste poging + een grappige 'te krap'-regel. */
@@ -2080,15 +2095,20 @@
   }
 
   function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
-  // Kopieert naar het klembord als platte tekst (geen deel-menu).
-  // kind='vol' = volledige bon, kind='tekst' = alleen de items.
-  async function deelBon(kind){
-    const txt = kind==='vol' ? bonVol : bonTekst;
-    if(!txt){toast('Eerst rammen!');return;}
-    const melding = kind==='vol' ? 'Bon gekopieerd 📋' : 'Gekopieerd als tekst 📋';
-    try{
-      await navigator.clipboard.writeText(txt); toast(melding);
-    }catch(e){
+  /* Deelknop: het deel-menu van de telefoon (WhatsApp, Berichten, …). De link staat in
+     de tekst zelf, want sommige apps laten een los meegegeven url weg of plakken hem dubbel.
+     Geen deel-menu (computer)? Dan naar het klembord. Wegtikken van het menu is geen fout. */
+  async function deelMetVrienden(){
+    if(!bonDeel){ toast('Eerst rammen!'); return; }
+    if(navigator.share){
+      try{ await navigator.share({title:'Het Snackorakel', text:bonDeel}); return; }
+      catch(e){ if(e && e.name==='AbortError') return; }
+    }
+    await naarKlembord(bonDeel, 'Gekopieerd, plak het in je appgroep 📤');
+  }
+  async function naarKlembord(txt, melding){
+    try{ await navigator.clipboard.writeText(txt); toast(melding); }
+    catch(e){
       try{
         const ta=document.createElement('textarea'); ta.value=txt;
         ta.style.position='fixed'; ta.style.top='-1000px'; ta.setAttribute('readonly','');
@@ -2096,6 +2116,13 @@
         toast(melding);
       }catch(_){ toast('Kopiëren mislukt'); }
     }
+  }
+  // Kopieert naar het klembord als platte tekst (geen deel-menu).
+  // kind='vol' = volledige bon, kind='tekst' = alleen de items.
+  async function deelBon(kind){
+    const txt = kind==='vol' ? bonVol : bonTekst;
+    if(!txt){toast('Eerst rammen!');return;}
+    await naarKlembord(txt, kind==='vol' ? 'Bon gekopieerd 📋' : 'Gekopieerd als tekst 📋');
   }
 
   /* alles gedefinieerd -> nu pas opstarten */
