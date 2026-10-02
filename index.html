@@ -53,7 +53,6 @@
   .maand b{display:block; font-family:'Anton',sans-serif; font-weight:400; font-size:19px; letter-spacing:.5px; margin-top:1px}
   .maand .prijs{display:inline-block; margin-top:3px; background:var(--rood); color:var(--wit); border-radius:6px;
     padding:1px 8px; font-family:'Anton',sans-serif; font-weight:400; font-size:15px; letter-spacing:.5px}
-  .filterchip{font-size:11px; font-weight:800; color:var(--rood); margin-left:8px; letter-spacing:.3px}
   .bulbs{position:absolute; top:-4px; left:0; right:0; display:flex; justify-content:space-around; padding:0 14px}
   .bulb{width:9px; height:9px; border-radius:50%; background:var(--geel); margin-top:-4px; box-shadow:0 0 6px var(--geel); animation:flick 1.2s infinite}
   .bulb:nth-child(odd){animation-delay:.6s}
@@ -325,6 +324,16 @@
     </div>
 
     <div class="row">
+      <span class="lbl">Kaas</span>
+      <div class="toggle on" id="t-kaas" onclick="toggleKaas()" role="switch" aria-label="Kaas mag op de bon"><div class="knob">🧀</div></div>
+    </div>
+
+    <div class="row maandrij">
+      <span class="lbl">Snack v/d maand</span>
+      <div class="toggle on" id="t-maand" onclick="toggleMaand()" role="switch" aria-label="Snack van de maand mag op de bon"><div class="knob">⭐</div></div>
+    </div>
+
+    <div class="row">
       <span class="lbl">Patat erbij</span>
       <div class="toggle" id="t-patat" onclick="togglePatat()"><div class="knob">🍟</div></div>
     </div>
@@ -363,7 +372,7 @@
     <div class="budgetwarn" id="budgetWarn"></div>
 
     <div class="row last" id="row-meer" onclick="toggleMeer()" style="cursor:pointer; border-top:2px dashed #d9c3a3; margin-top:4px">
-      <span class="lbl">⚙️ Meer opties<span class="filterchip" id="kaas-chip" hidden>🚫🧀 zonder kaas</span></span>
+      <span class="lbl">⚙️ Meer opties</span>
       <span id="meer-caret" style="font-family:'Anton',sans-serif; font-size:15px">▾</span>
     </div>
     <div class="meer" id="sub-meer">
@@ -372,14 +381,6 @@
         <div class="seg" id="seg-kip">
           <button class="on" data-v="mag">Mag</button><button data-v="altijd">Altijd</button><button data-v="geen">Geen</button>
         </div>
-      </div>
-      <div class="row">
-        <span class="lbl">Kaas</span>
-        <div class="toggle on" id="t-kaas" onclick="toggleKaas()" role="switch" aria-label="Kaas mag op de bon"><div class="knob">🧀</div></div>
-      </div>
-      <div class="row maandrij">
-        <span class="lbl">Snack v/d maand</span>
-        <div class="toggle on" id="t-maand" onclick="toggleMaand()" role="switch" aria-label="Snack van de maand mag op de bon"><div class="knob">⭐</div></div>
       </div>
       <div class="row last sausrij" onclick="toggleSauzen()">
         <span class="lbl">Sauzen</span>
@@ -630,7 +631,6 @@
   }
   function toonKaas(){
     zetSchakelaar('t-kaas', kaasMode!=='geen');
-    document.getElementById('kaas-chip').hidden = kaasMode!=='geen';
   }
   toonKaas();
   function toggleMaand(){
